@@ -1,3 +1,9 @@
+# mesh sound and other non code data
+bin/
+Debug/
+TestGame.opensdf
+*.sdf
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db
