@@ -25,6 +25,12 @@
 #include "camera.h"
 #include "Matrix4.h"
 
+//necessary for text rom braynzarsoft
+#include <D3D10_1.h>
+#include <DXGI.h>
+#include <D2D1.h>
+#include <sstream>
+#include <dwrite.h>
 /*
 Shader Variables:
 tVShader - basic texture vertex shader
@@ -53,6 +59,7 @@ struct Vertex
 struct ColorVertex
 {
 	DirectX::XMFLOAT3 position;
+	//DirectX::XMFLOAT3 normal;
 	DirectX::XMFLOAT3 color;
 };
 
@@ -437,6 +444,24 @@ private:
 		return shader;
 	}
 
+	//for writing surface creation, mostly from braynzarsoft
+	IDXGIAdapter1 *adapter;
+	ID3D10Device1 *d3d101Device;
+	IDXGIKeyedMutex *keyedMutex11;
+	IDXGIKeyedMutex *keyedMutex10;
+	ID2D1RenderTarget *D2DRenderTarget;
+	ID2D1SolidColorBrush *Brush;
+	ID3D11Texture2D *BackBuffer11;
+	ID3D11Texture2D *sharedTex11;
+	ID3D11Buffer *d2dVertBuffer;
+	ID3D11Buffer *d2dIndexBuffer;
+	ID3D11ShaderResourceView *d2dTexture;
+	IDWriteFactory *DWriteFactory;
+	IDWriteTextFormat *TextFormat;
+
+	std::wstring printText;
+
+	bool InitD2D_D3D101_DWrite();
 
 public:
 	//camera class - located here to provide the ability to the camera to create world transforms in addition

@@ -5,37 +5,58 @@ TextureManager::TextureManager()
 {
 //	texture = NULL;
 //	iTexture = NULL;
-	textureMapSRV = NULL;
-    width = 0;
-    height = 0;
-    file = NULL;
+	//textureMapSRV = NULL;
+    //width = 0;
+    //height = 0;
+    //file = NULL;
     graphics = NULL;
     initialized = false;
 }
 //destructor
 TextureManager::~TextureManager()
 {
-	textureMapSRV->Release();
+	//textureMapSRV->Release();
 }
 //load texture
-bool TextureManager::initialize(Graphics *graph, const wchar_t *f)
+ID3D11ShaderResourceView *TextureManager::loadTexture(const wchar_t *f)
+{
+	std::wostringstream toConvert;
+	toConvert << f;
+	const std::wstring fileName(toConvert.str());
+	textureIterator = textureTable.find(fileName);
+
+	//if texture isn't loaded
+	if (textureIterator == textureTable.end())
+	{
+		sTexture *temp = new sTexture;
+
+		temp->textureMapSRV = graphics->createTextureSRV(f);
+		textureTable.emplace(fileName, *temp);
+		return temp->textureMapSRV;
+	}
+	else
+		return textureIterator->second.textureMapSRV;
+}
+
+
+void TextureManager::initialize(Graphics *graph)
 {
 	graphics = graph;
-	file = f;
 		
 	//load and confirm texture
 //	hr = D3DX11CreateShaderResourceViewFromFile(graphics->getDevice(), file, 0, 0, &textureMapSRV, 0);
 //	if (FAILED(hr))
 //		throw(GameError(gameErrorNS::FATAL_ERROR, "Error creating texture resource."));
 
-	textureMapSRV = graphics->createTextureSRV(file);
+	//textureMapSRV = graphics->createTextureSRV(file);
 
 	//get texture dimensions
 		
 
 	initialized = true;
-	return true;
 }
+
+
 
 //dump texture if graphics device lost
 void TextureManager::onLostDevice()

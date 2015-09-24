@@ -180,6 +180,7 @@ void Game::initialize(HWND hw, UINT w, UINT h, bool f)
 	//initialize graphics
 	graphics = new Graphics();
 	graphics->initialize(hwnd, w, h, f);
+	textureManager.initialize(graphics);
 	//initialize input
 	input->initialize(hwnd, true);
 	//initialize sound engine

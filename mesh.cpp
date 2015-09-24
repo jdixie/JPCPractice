@@ -34,8 +34,8 @@ HRESULT MeshHandler::loadMesh(ImageInfo *image, const wchar_t *filename)
 
 	std::wostringstream toConvert;
 	toConvert << filename;
-	const std::wstring fileName(toConvert.str());
-	meshIterator = meshTable.find(fileName);
+	const std::wstring f(toConvert.str());
+	meshIterator = meshTable.find(f);
 
 	if (meshIterator == meshTable.end()) //if we haven't loaded this mesh yet, load it now
 	{
@@ -657,4 +657,44 @@ void MeshHandler::createSphere(float radius, float divisions, ImageInfo *image)
 	//until texture stuff is ready
 	image->color[0] = image->color[3] = 1.0;
 	image->color[1] = image->color[2] = 0.0;
+}
+
+void MeshHandler::createRect(float length, float width, ImageInfo *image)
+{
+	image->totalVertices = 4;
+	image->totalIndices = 6;
+	image->x = 0;
+	image->y = 0;
+	image->z = 0;
+
+	float l = length / 2;
+	float w = width / 2;
+
+	image->mesh->vertices.resize(4);
+	image->mesh->vertices[0].position = DirectX::XMFLOAT3(-l, 0, -w);
+	image->mesh->vertices[1].position = DirectX::XMFLOAT3(l, 0, -w);
+	image->mesh->vertices[2].position = DirectX::XMFLOAT3(l, 0, w);
+	image->mesh->vertices[3].position = DirectX::XMFLOAT3(-l, 0, w);
+
+	image->mesh->vertices[0].normal = DirectX::XMFLOAT3(0, 1, 0);
+	image->mesh->vertices[1].normal = DirectX::XMFLOAT3(0, 1, 0);
+	image->mesh->vertices[2].normal = DirectX::XMFLOAT3(0, 1, 0);
+	image->mesh->vertices[3].normal = DirectX::XMFLOAT3(0, 1, 0);
+
+	image->mesh->vertices[0].tex = DirectX::XMFLOAT2(0, 0);
+	image->mesh->vertices[1].tex = DirectX::XMFLOAT2(1, 0);
+	image->mesh->vertices[2].tex = DirectX::XMFLOAT2(1, 1);
+	image->mesh->vertices[3].tex = DirectX::XMFLOAT2(0, 1);
+
+	image->mesh->indices.resize(6);
+	image->mesh->indices[0] = 0;
+	image->mesh->indices[1] = 1;
+	image->mesh->indices[2] = 2;
+	image->mesh->indices[3] = 0;
+	image->mesh->indices[4] = 2;
+	image->mesh->indices[5] = 3;
+
+	MaterialProperties tempMat;
+	tempMat.Mat.UseTexture = true;
+	image->mesh->materials.push_back(tempMat);
 }

@@ -26,6 +26,7 @@ public:
 	void creatBasicLandscape(ImageInfo *image, int width, int height, int interval); //create basic land geometry
 	void createGrid(float width, float depth, UINT m, UINT n, ImageInfo *image);
 	void createSphere(float radius, float divisions, ImageInfo *image);
+	void createRect(float length, float width, ImageInfo *image);
 };
 
 #endif

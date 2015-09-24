@@ -3,9 +3,9 @@
 JPCPractice::JPCPractice()
 {
 	cameraX = 0.0f;
-	cameraY = 1500.0f;
+	cameraY = 0.0f;
 	cameraZ = 0.0f;
-	ry = 75;
+	ry = 0;
 	rxz = 0;
 	incX = 0;
 	incY = 0;
@@ -78,20 +78,66 @@ void JPCPractice::initialize(HWND hw)
 
 	player.initialize(input, graphics, 0, 0, 1);
 	loadLevel(0);
-	geometry.at(0)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(.4, .4, .4, 1);
-	geometry.at(0)->rotate(90, 1, 0, 0);
+	//geometry.at(0)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(.4, .4, .4, 1);
+	//geometry.at(0)->rotate(90, 1, 0, 0);
 
-	Object *sphere = new Object;
+	/*Object *sphere = new Object;
 	sphere->initialize(graphics, 0, 0, 1);
 	sphere->getImageInfo()->mesh = new MeshData;
 	meshHandler.createSphere(150, 16, sphere->getImageInfo());
 	sphere->getImageInfo()->mesh->textureMapSRV.push_back(graphics->createTextureSRV(L"mesh\\walls.png"));
 	sphere->setY(100);
 	sphere->setVertices();
-	entity.push_back(sphere);
+	entity.push_back(sphere);*/
+
+	//set up play screens: vertically 0-4 are column 1 100-500, 5-9 are column 2 100-500, etc.
+	//25-29 are the category screens across the top
+	//center of each play screen, since looking down x axis, all x will be the same
+	float yc = 225;
+	float zc = -400;
+	for (int i = 0; i < 30; i++)
+	{
+		Object *screen = new Object;
+		screen->initialize(graphics, 0, 0, 1);
+		screen->getImageInfo()->mesh = new MeshData;
+		meshHandler.createRect(145, 195, screen->getImageInfo());
+		//screen->getImageInfo()->mesh->textureMapSRV.push_back(graphics->createTextureSRV(L"mesh\\darkblue.jpg"));
+		screen->getImageInfo()->mesh->textureMapSRV.push_back(textureManager.loadTexture(L"mesh\\darkblue.jpg"));
+		screen->setVertices();
+		entity.push_back(screen);
+		entity.at(i)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+		entity.at(i)->rotate(90, 0, 0, 1);
+		entity.at(i)->setX(1000);
+
+		if (i < 25)
+		{
+			if (i % 5 == 0 & i != 0)
+			{
+				yc = 225;
+				zc += 200;
+			}
+
+			entity.at(i)->setY(yc);
+			yc -= 150;
+			entity.at(i)->setZ(zc);	
+
+			if (i == 24) //set-up for category play screens
+			{
+				yc = 375;
+				zc = -400;
+			}
+		}
+		else
+		{
+			entity.at(i)->setY(yc);
+			entity.at(i)->setZ(zc);
+			zc += 200;
+		}
+	}
 
 	graphics->camera.setCamType(CamType::FPS);
 	graphics->camera.initialize();
+	graphics->camera.setPosition(0, 0, 0, 0, 0);
 }
 
 void JPCPractice::update()
@@ -280,7 +326,7 @@ bool JPCPractice::loadLevel(int level)
 	int tempLevel;
 
 	//for testing purposes, be sure to remove
-	Object *tempLand = new Object();
+/*	Object *tempLand = new Object();
 	tempLand->getImageInfo()->mesh = new MeshData();
 	tempLand->getImageInfo()->mesh->textureMapSRV.push_back(graphics->createTextureSRV(L"mesh\\stone_floor.jpg"));
 	meshHandler.createGrid(10000, 10000, 10, 10, tempLand->getImageInfo());
@@ -288,9 +334,7 @@ bool JPCPractice::loadLevel(int level)
 
 	tempLand->initialize(graphics, 0, 0, fGameScale);
 	tempLand->setVertices();
-	geometry.push_back(tempLand);
-
-	
+	geometry.push_back(tempLand);*/
 
 	return true;
 }

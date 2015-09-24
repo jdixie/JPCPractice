@@ -31,7 +31,7 @@ public:
 	{
 		camType = CamType::FPS;
 		xPos = zPos = 0;
-		yPos = 100;
+		yPos = 0;
 		xTar = yTar = 0;
 		zTar = 10;
 		upX = upZ = 0;
@@ -92,9 +92,9 @@ public:
 			break;
 		case FPS:
 		default:
-			xTar = xPos + cos(ry);
-			yTar = yPos + sin(rxz);
-			zTar = zPos + sin(ry);
+			xTar = xPos + cos(radRY);
+			yTar = yPos + sin(radRXZ);
+			zTar = zPos + sin(radRY);
 			break;
 		}
 

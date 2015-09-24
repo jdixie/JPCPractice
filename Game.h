@@ -48,7 +48,7 @@ protected:
 	//CollGrid collisionGrid;
 
 	MeshHandler meshHandler;		//geometry and mesh handler
-	//make a final decision/rewrite for texture manager
+	TextureManager textureManager;
 	Object basicBlock; //testing-this will not be final
 
 	HWND hwnd;				//window handler

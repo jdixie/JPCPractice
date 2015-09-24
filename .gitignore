@@ -2,6 +2,7 @@
 bin/
 Debug/
 TestGame.opensdf
+JPC Practice.opensdf
 *.sdf
 
 # Windows image file caches
