@@ -458,10 +458,13 @@ private:
 	ID3D11ShaderResourceView *d2dTexture;
 	IDWriteFactory *DWriteFactory;
 	IDWriteTextFormat *TextFormat;
+	ID3D11BlendState *Transparency;
+	ImageInfo textImage;
 
 	std::wstring printText;
 
 	bool InitD2D_D3D101_DWrite();
+	void InitD2DScreenTexture();
 
 public:
 	//camera class - located here to provide the ability to the camera to create world transforms in addition
@@ -573,12 +576,12 @@ public:
 	}
 
 	virtual void drawTextured(ImageInfo *image);
-	virtual void drawColored(ImageInfo *image);
+	//virtual void drawColored(ImageInfo *image);
 
 	//blending
 	virtual void setBlendStateNotTransparent() { dxDeviceContext->OMSetBlendState(NULL, NULL, 0xffffffff); }
 	virtual void setBlendStateTransparent(float blendFactors[]) { dxDeviceContext->OMSetBlendState(transparentBS, blendFactors, 0xffffffff); }
-
+	void renderText(std::wstring text);// , ImageInfo *image);
 };
 
 #endif

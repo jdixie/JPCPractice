@@ -110,10 +110,10 @@ void Image::setVertices()
 
 void Image::draw()
 {
-	if (imageInfo.mesh->textureMapSRV.at(0) != NULL)
+//	if (imageInfo.mesh->textureMapSRV.at(0) != NULL)
 		graphics->drawTextured(&imageInfo);
-	else
-		graphics->drawColored(&imageInfo);
+//	else
+//		graphics->drawColored(&imageInfo);
 }
 
 void Image::update(float frameTime)

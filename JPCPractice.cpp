@@ -1,4 +1,4 @@
-#include "JPCPractice.h"
+﻿#include "JPCPractice.h"
 
 JPCPractice::JPCPractice()
 {
@@ -215,7 +215,7 @@ void JPCPractice::update()
 	//	player.finalizeMovement();
 
 	//update lighting
-	lAngle += .05;
+	/*lAngle += .05;
 	if (lAngle >= 360)
 		lAngle = 0;
 	float sa = 500 * sin(lAngle);
@@ -224,7 +224,7 @@ void JPCPractice::update()
 	lighting.Lights[1].Position = DirectX::XMFLOAT4(-2500 + sa, 500, -2500 + ca, 1);
 	lighting.Lights[2].Position = DirectX::XMFLOAT4(-2500 + sa, 500, 2500 + ca, 1);
 	lighting.Lights[3].Position = DirectX::XMFLOAT4(2500 + sa, 500, -2500 + ca, 1);
-	lighting.Lights[4].Position = DirectX::XMFLOAT4(2500 + sa, 500, 2500 + ca, 1);
+	lighting.Lights[4].Position = DirectX::XMFLOAT4(2500 + sa, 500, 2500 + ca, 1);*/
 }
 
 void JPCPractice::geometryCollide()
@@ -251,6 +251,7 @@ void JPCPractice::render()
 	//OutputDebugString(a.str().c_str());
 	graphics->camera.setPosition(cameraX, cameraY, cameraZ, ry, rxz);
 	graphics->setViewMatrix();
+	
 	//player.draw();
 	for (int i = 0; i < geometry.size(); i++)
 		geometry[i]->draw();
@@ -260,6 +261,8 @@ void JPCPractice::render()
 		image[i]->draw();
 	for (int i = 0; i < npc.size(); i++)
 		npc[i]->draw();
+	graphics->renderText(L"Test テスト");
+	graphics->renderText(L"Over or replace?");
 }
 
 void JPCPractice::loadConfig()

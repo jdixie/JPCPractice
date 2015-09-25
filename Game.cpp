@@ -32,7 +32,7 @@ Game::Game()
 	}
 	lighting.GlobalAmbient = DirectX::XMFLOAT4(.4, .4, .4, 1);
 
-	lighting.Lights[0].Enabled = 1;
+	lighting.Lights[0].Enabled = 0;
 	lighting.Lights[0].LightType = PointLight;
 	lighting.Lights[0].Color = DirectX::XMFLOAT4(1, 1, 0, 1);
 	//lighting.Lights[0].SpotAngle = XMConvertToRadians(45.0f);
@@ -44,7 +44,7 @@ Game::Game()
 	LightDirection0 = DirectX::XMVector3Normalize(LightDirection0);
 	XMStoreFloat4(&lighting.Lights[0].Direction, LightDirection0);
 
-	lighting.Lights[1].Enabled = 1;
+	lighting.Lights[1].Enabled = 0;
 	lighting.Lights[1].LightType = PointLight;
 	lighting.Lights[1].Color = DirectX::XMFLOAT4(1, 0, 1, 1);
 	//lighting.Lights[0].SpotAngle = XMConvertToRadians(45.0f);
@@ -56,7 +56,7 @@ Game::Game()
 	LightDirection1 = DirectX::XMVector3Normalize(LightDirection1);
 	XMStoreFloat4(&lighting.Lights[1].Direction, LightDirection1);
 
-	lighting.Lights[2].Enabled = 1;
+	lighting.Lights[2].Enabled = 0;
 	lighting.Lights[2].LightType = PointLight;
 	lighting.Lights[2].Color = DirectX::XMFLOAT4(0, 1, 0, 1);
 	//lighting.Lights[2].SpotAngle = XMConvertToRadians(45.0f);
@@ -68,7 +68,7 @@ Game::Game()
 	LightDirection2 = DirectX::XMVector3Normalize(LightDirection2);
 	XMStoreFloat4(&lighting.Lights[2].Direction, LightDirection2);
 
-	lighting.Lights[3].Enabled = 1;
+	lighting.Lights[3].Enabled = 0;
 	lighting.Lights[3].LightType = PointLight;
 	lighting.Lights[3].Color = DirectX::XMFLOAT4(1, 1, 1, 1);
 	//lighting.Lights[3].SpotAngle = XMConvertToRadians(45.0f);
@@ -80,7 +80,7 @@ Game::Game()
 	LightDirection3 = DirectX::XMVector3Normalize(LightDirection3);
 	XMStoreFloat4(&lighting.Lights[3].Direction, LightDirection3);
 
-	lighting.Lights[4].Enabled = 1;
+	lighting.Lights[4].Enabled = 0;
 	lighting.Lights[4].LightType = PointLight;
 	lighting.Lights[4].Color = DirectX::XMFLOAT4(0, 0, 1, 1);
 	//lighting.Lights[4].SpotAngle = XMConvertToRadians(45.0f);
