@@ -92,9 +92,9 @@ public:
 			break;
 		case FPS:
 		default:
-			xTar = xPos + cos(radRY);
-			yTar = yPos + sin(radRXZ);
-			zTar = zPos + sin(radRY);
+			xTar = xPos + cos(radRXZ);
+			yTar = yPos + sin(radRY);
+			zTar = zPos + sin(radRXZ);
 			break;
 		}
 

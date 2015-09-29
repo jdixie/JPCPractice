@@ -43,6 +43,7 @@ protected:
 	std::vector<Object*> entity; //collideable non-ai objects
 	std::vector<Object*> geometry; //collidable geometry/platforms
 	std::vector<Image*> image; //non-colliable imagess
+	std::vector<TextImageInfo*> textImages; //text overlay textures
 
 	//GridContents collisionGrid[GRID_HASH_SIZE];
 	//CollGrid collisionGrid;

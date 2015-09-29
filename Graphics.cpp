@@ -375,7 +375,8 @@ void Graphics::initialize(HWND hwnd, float w, float h, bool full)
 	}
 	dxDeviceContext->PSSetSamplers(0, 1, &textureSamplerState);
 
-	InitD2D_D3D101_DWrite();
+	//InitD2D_D3D101_DWrite();
+	InitD3D101_DWrite();
 
 	D3D11_BLEND_DESC blendDesc;
 	ZeroMemory(&blendDesc, sizeof(blendDesc));
@@ -395,11 +396,10 @@ void Graphics::initialize(HWND hwnd, float w, float h, bool full)
 	blendDesc.AlphaToCoverageEnable = false;
 	blendDesc.RenderTarget[0] = rtbd;
 
-	dxDevice->CreateBlendState(&blendDesc, &Transparency);
-	textImage.mesh = new MeshData;
-	InitD2DScreenTexture();
-	textImage.mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
-	textImage.rotation.makeRotate(180, 1, 0, 0);
+	blendDesc.AlphaToCoverageEnable = false;
+	blendDesc.RenderTarget[0] = rtbd;
+
+	dxDevice->CreateBlendState(&blendDesc, &transparentBS);
 }
 
 void Graphics::setNoCullRastState()
@@ -585,7 +585,7 @@ void Graphics::endRender()
 }
 
 //Creating writing surface, using code from braynzarsoft
-bool Graphics::InitD2D_D3D101_DWrite()
+/*bool Graphics::InitD2D_D3D101_DWrite()
 {
 	//Create our Direc3D 10.1 Device///////////////////////////////////////////////////////////////////////////////////////
 	hr = D3D10CreateDevice1(adapter, D3D10_DRIVER_TYPE_HARDWARE, NULL, D3D10_CREATE_DEVICE_BGRA_SUPPORT,
@@ -671,6 +671,9 @@ bool Graphics::InitD2D_D3D101_DWrite()
 
 void Graphics::InitD2DScreenTexture()
 {
+	//pointer for texture to be created
+	//ID3D11ShaderResourceView *d2dTexture;
+
 	//Create the vertex buffer
 	textImage.totalVertices = 4;
 	textImage.totalIndices = 6;
@@ -678,11 +681,11 @@ void Graphics::InitD2DScreenTexture()
 	textImage.y = 0;
 	textImage.z = 0;
 
-	float l = 100;
-	float w = 100;
+	float l = 122.5;
+	float w = 72.5;
 
 	textImage.mesh->vertices.resize(4);
-	/*textImage.mesh->vertices[0].position = DirectX::XMFLOAT3(-l, 0, -w);
+	textImage.mesh->vertices[0].position = DirectX::XMFLOAT3(-l, 0, -w);
 	textImage.mesh->vertices[1].position = DirectX::XMFLOAT3(l, 0, -w);
 	textImage.mesh->vertices[2].position = DirectX::XMFLOAT3(l, 0, w);
 	textImage.mesh->vertices[3].position = DirectX::XMFLOAT3(-l, 0, w);
@@ -690,11 +693,11 @@ void Graphics::InitD2DScreenTexture()
 	textImage.mesh->vertices[0].normal = DirectX::XMFLOAT3(0, 1, 0);
 	textImage.mesh->vertices[1].normal = DirectX::XMFLOAT3(0, 1, 0);
 	textImage.mesh->vertices[2].normal = DirectX::XMFLOAT3(0, 1, 0);
-	textImage.mesh->vertices[3].normal = DirectX::XMFLOAT3(0, 1, 0);*/
-	textImage.mesh->vertices[0].position = DirectX::XMFLOAT3(999, -w, -l);
-	textImage.mesh->vertices[1].position = DirectX::XMFLOAT3(999, -w, l);
-	textImage.mesh->vertices[2].position = DirectX::XMFLOAT3(999, w, l);
-	textImage.mesh->vertices[3].position = DirectX::XMFLOAT3(999, w, -l);
+	textImage.mesh->vertices[3].normal = DirectX::XMFLOAT3(0, 1, 0);
+	/*textImage.mesh->vertices[0].position = DirectX::XMFLOAT3(0, -w, -l);
+	textImage.mesh->vertices[1].position = DirectX::XMFLOAT3(0, -w, l);
+	textImage.mesh->vertices[2].position = DirectX::XMFLOAT3(0, w, l);
+	textImage.mesh->vertices[3].position = DirectX::XMFLOAT3(0, w, -l);
 
 	textImage.mesh->vertices[0].normal = DirectX::XMFLOAT3(-1, 0, 0);
 	textImage.mesh->vertices[1].normal = DirectX::XMFLOAT3(-1, 0, 0);
@@ -746,10 +749,130 @@ void Graphics::InitD2DScreenTexture()
 
 	dxDevice->CreateBuffer(&ibd, &srdi, &textImage.indexBuffer);
 	dxDevice->CreateShaderResourceView(sharedTex11, NULL, &d2dTexture);
+}*/
+
+bool Graphics::InitD3D101_DWrite()
+{
+	//Create our Direc3D 10.1 Device///////////////////////////////////////////////////////////////////////////////////////
+	hr = D3D10CreateDevice1(adapter, D3D10_DRIVER_TYPE_HARDWARE, NULL, D3D10_CREATE_DEVICE_BGRA_SUPPORT,
+		D3D10_FEATURE_LEVEL_9_3, D3D10_1_SDK_VERSION, &d3d101Device);
+
+	d3d101Device->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_POINTLIST);
+	return true;
 }
 
-void Graphics::renderText(std::wstring text)//, ImageInfo *image)
+void Graphics::InitD2DRectTexture(TextImageInfo *textImageInfo, float textSize)
 {
+	//Create Shared Texture that Direct3D 10.1 will render on//////////////////////////////////////////////////////////////
+	D3D11_TEXTURE2D_DESC sharedTexDesc;
+
+	ZeroMemory(&sharedTexDesc, sizeof(sharedTexDesc));
+
+	sharedTexDesc.Width = width;
+	sharedTexDesc.Height = height;
+	sharedTexDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+	sharedTexDesc.MipLevels = 1;
+	sharedTexDesc.ArraySize = 1;
+	sharedTexDesc.SampleDesc.Count = 1;
+	sharedTexDesc.Usage = D3D11_USAGE_DEFAULT;
+	sharedTexDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+	sharedTexDesc.MiscFlags = D3D11_RESOURCE_MISC_SHARED_KEYEDMUTEX;
+
+	hr = dxDevice->CreateTexture2D(&sharedTexDesc, NULL, &textImageInfo->sharedTex11);
+
+	// Get the keyed mutex for the shared texture (for D3D11)///////////////////////////////////////////////////////////////
+	hr = textImageInfo->sharedTex11->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&textImageInfo->keyedMutex11);
+
+	// Get the shared handle needed to open the shared texture in D3D10.1///////////////////////////////////////////////////
+	IDXGIResource *sharedResource10;
+	HANDLE sharedHandle10;
+
+	hr = textImageInfo->sharedTex11->QueryInterface(__uuidof(IDXGIResource), (void**)&sharedResource10);
+
+	hr = sharedResource10->GetSharedHandle(&sharedHandle10);
+
+	sharedResource10->Release();
+
+	// Open the surface for the shared texture in D3D10.1///////////////////////////////////////////////////////////////////
+	IDXGISurface1 *sharedSurface10;
+
+	hr = d3d101Device->OpenSharedResource(sharedHandle10, __uuidof(IDXGISurface1), (void**)(&sharedSurface10));
+
+	hr = sharedSurface10->QueryInterface(__uuidof(IDXGIKeyedMutex), (void**)&textImageInfo->keyedMutex10);
+
+	// Create D2D factory///////////////////////////////////////////////////////////////////////////////////////////////////
+	ID2D1Factory *D2DFactory;
+	hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory), (void**)&D2DFactory);
+
+	D2D1_RENDER_TARGET_PROPERTIES renderTargetProperties;
+
+	ZeroMemory(&renderTargetProperties, sizeof(renderTargetProperties));
+
+	renderTargetProperties.type = D2D1_RENDER_TARGET_TYPE_HARDWARE;
+	renderTargetProperties.pixelFormat = D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED);
+
+	hr = D2DFactory->CreateDxgiSurfaceRenderTarget(sharedSurface10, &renderTargetProperties, &textImageInfo->D2DRenderTarget);
+
+	sharedSurface10->Release();
+	D2DFactory->Release();
+
+	// Create a solid color brush to draw something with		
+	hr = textImageInfo->D2DRenderTarget->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 0.0f, 1.0f), &textImageInfo->Brush);
+
+	//DirectWrite///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
+		reinterpret_cast<IUnknown**>(&DWriteFactory));
+
+	hr = DWriteFactory->CreateTextFormat(
+		L"Script",
+		NULL,
+		DWRITE_FONT_WEIGHT_REGULAR,
+		DWRITE_FONT_STYLE_NORMAL,
+		DWRITE_FONT_STRETCH_NORMAL,
+		textSize,
+		L"en-us",
+		&textImageInfo->TextFormat
+		);
+
+	hr = textImageInfo->TextFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+	hr = textImageInfo->TextFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_CENTER);
+
+	//pointer for texture to be created
+	//ID3D11ShaderResourceView *d2dTexture;
+
+	D3D11_BUFFER_DESC vbdt;
+	vbdt.Usage = D3D11_USAGE_IMMUTABLE;
+	vbdt.ByteWidth = sizeof(Vertex) * textImageInfo->totalVertices;
+	vbdt.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vbdt.CPUAccessFlags = 0;
+	vbdt.MiscFlags = 0;
+	vbdt.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA srdt;
+	srdt.pSysMem = &textImageInfo->mesh->vertices[0];
+	dxDevice->CreateBuffer(&vbdt, &srdt, &textImageInfo->vertexBuffer);
+
+	D3D11_BUFFER_DESC ibd;
+	ibd.Usage = D3D11_USAGE_IMMUTABLE;
+	ibd.ByteWidth = sizeof(UINT) * textImageInfo->totalIndices;
+	ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	ibd.CPUAccessFlags = 0;
+	ibd.MiscFlags = 0;
+	ibd.StructureByteStride = 0;
+
+	D3D11_SUBRESOURCE_DATA srdi;
+	srdi.pSysMem = &textImageInfo->mesh->indices[0];
+
+	dxDevice->CreateBuffer(&ibd, &srdi, &textImageInfo->indexBuffer);
+	ID3D11ShaderResourceView *tempSRV;
+	dxDevice->CreateShaderResourceView(textImageInfo->sharedTex11, NULL, &tempSRV);
+	textImageInfo->mesh->textureMapSRV.push_back(tempSRV);
+}
+
+/*void Graphics::renderText(std::wstring text)//, ImageInfo *image)
+{
+	textImage.z = 1049;
+	textImage.rotation.makeRotate(-90, 1, 0, 0);
 	//Release the D3D 11 Device
 	keyedMutex11->ReleaseSync(0);
 
@@ -762,11 +885,8 @@ void Graphics::renderText(std::wstring text)//, ImageInfo *image)
 	//Clear D2D Background
 	D2DRenderTarget->Clear(D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f));
 
-	//Create our string
-	std::wostringstream printString;
-	printString << text;
-	printText = printString.str();
-
+	printText = text;
+	
 	//Set the Font Color
 	D2D1_COLOR_F FontColor = D2D1::ColorF(1.0f, 1.0f, 0.0f, 1.0f);
 
@@ -774,7 +894,8 @@ void Graphics::renderText(std::wstring text)//, ImageInfo *image)
 	Brush->SetColor(FontColor);
 
 	//Create the D2D Render Area
-	D2D1_RECT_F layoutRect = D2D1::RectF(0, 0, 400, 400);
+	D2D1_RECT_F layoutRect = D2D1::RectF(0, 0, width, height);
+	//D2DRenderTarget->SetTransform();
 
 	//Draw the Text
 	D2DRenderTarget->DrawText(
@@ -784,7 +905,7 @@ void Graphics::renderText(std::wstring text)//, ImageInfo *image)
 		layoutRect,
 		Brush
 		);
-
+	
 	D2DRenderTarget->EndDraw();
 
 	//Release the D3D10.1 Device
@@ -807,7 +928,7 @@ void Graphics::renderText(std::wstring text)//, ImageInfo *image)
 	//Set the d2d vertex buffer
 	UINT stride = sizeof(Vertex);
 	UINT offset = 0;
-	dxDeviceContext->IASetVertexBuffers(0, 1, &d2dVertBuffer, &stride, &offset);*/
+	dxDeviceContext->IASetVertexBuffers(0, 1, &d2dVertBuffer, &stride, &offset);
 
 	//ready the vertices and transform matrix
 	DirectX::XMMATRIX scale
@@ -831,7 +952,7 @@ void Graphics::renderText(std::wstring text)//, ImageInfo *image)
 		1, 0, 0, 0,
 		0, 1, 0, 0,
 		0, 0, 1, 0,
-		0, 0, 0, 1
+		textImage.x, textImage.y, textImage.z, 1
 		);
 	//DirectX::XMMATRIX world = scale*camera.getWorldRotationMatrix()*translation;
 	DirectX::XMMATRIX world = scale*rotation*translation;
@@ -884,8 +1005,150 @@ void Graphics::renderText(std::wstring text)//, ImageInfo *image)
 
 	dxDeviceContext->RSSetState(CWcullMode);
 	//Draw the second cube
-	dxDeviceContext->DrawIndexed(6, 0, 0);*/
+	dxDeviceContext->DrawIndexed(6, 0, 0);
 
 	//set back to opaque
 	dxDeviceContext->OMSetBlendState(0, 0, 0xffffffff);
+}*/
+
+void Graphics::drawTextRect(TextImageInfo *textImageInfo)
+{
+	//Release the D3D 11 Device
+	textImageInfo->keyedMutex11->ReleaseSync(0);
+
+	//Use D3D10.1 device
+	textImageInfo->keyedMutex10->AcquireSync(0, 5);
+
+	//Draw D2D content		
+	textImageInfo->D2DRenderTarget->BeginDraw();
+
+	//Clear D2D Background
+	textImageInfo->D2DRenderTarget->Clear(D2D1::ColorF(0.0f, 0.0f, 0.0f, 0.0f));
+
+	//Set the Font Color
+	D2D1_COLOR_F FontColor = D2D1::ColorF(1.0f, 1.0f, 0.0f, 1.0f);
+
+	//Set the brush color D2D will use to draw with
+	textImageInfo->Brush->SetColor(FontColor);
+
+	//Create the D2D Render Area
+	D2D1_RECT_F layoutRect = D2D1::RectF(0, 0, width, height);
+	//D2DRenderTarget->SetTransform();
+
+	//Draw the Text
+	textImageInfo->D2DRenderTarget->DrawText(
+		textImageInfo->text.c_str(),
+		wcslen(textImageInfo->text.c_str()),
+		textImageInfo->TextFormat,
+		layoutRect,
+		textImageInfo->Brush
+		);
+
+	textImageInfo->D2DRenderTarget->EndDraw();
+
+	//Release the D3D10.1 Device
+	textImageInfo->keyedMutex10->ReleaseSync(1);
+
+	//Use the D3D11 Device
+	textImageInfo->keyedMutex11->AcquireSync(1, 5);
+
+	//Use the shader resource representing the direct2d render target
+	//to texture a square which is rendered in screen space so it
+	//overlays on top of our entire scene. We use alpha blending so
+	//that the entire background of the D2D render target is "invisible",
+	//And only the stuff we draw with D2D will be visible (the text)
+
+	//Set the blend state for D2D render target texture objects
+	//dxDeviceContext->OMSetBlendState(Transparency, NULL, 0xffffffff);
+	float transparentFactor[] = {
+		1, 1, 1, 1
+	};
+	setBlendStateTransparent(transparentFactor);
+
+	//Set the d2d Index buffer
+	/*dxDeviceContext->IASetIndexBuffer(d2dIndexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	//Set the d2d vertex buffer
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	dxDeviceContext->IASetVertexBuffers(0, 1, &d2dVertBuffer, &stride, &offset);*/
+
+	//ready the vertices and transform matrix
+	DirectX::XMMATRIX scale
+		(
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+		);
+
+	DirectX::XMMATRIX rotation
+		(
+		textImageInfo->rotation.m00, textImageInfo->rotation.m01, textImageInfo->rotation.m02, textImageInfo->rotation.m03,
+		textImageInfo->rotation.m10, textImageInfo->rotation.m11, textImageInfo->rotation.m12, textImageInfo->rotation.m13,
+		textImageInfo->rotation.m20, textImageInfo->rotation.m21, textImageInfo->rotation.m22, textImageInfo->rotation.m23,
+		textImageInfo->rotation.m30, textImageInfo->rotation.m31, textImageInfo->rotation.m23, textImageInfo->rotation.m33
+		);
+
+	DirectX::XMMATRIX translation
+		(
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		textImageInfo->x, textImageInfo->y, textImageInfo->z, 1
+		);
+	//DirectX::XMMATRIX world = scale*camera.getWorldRotationMatrix()*translation;
+	DirectX::XMMATRIX world = scale*rotation*translation;
+	objectBufferData.WorldMatrix = world;
+
+	DirectX::XMVECTOR worldDet = DirectX::XMMatrixDeterminant(world);
+	DirectX::XMMATRIX worldInv = DirectX::XMMatrixInverse(&worldDet, world);
+	//DirectX::XMMATRIX worldInvTrans = DirectX::XMMatrixTranspose(worldInv);
+	objectBufferData.InverseTransposeWorldMatrix = DirectX::XMMatrixTranspose(worldInv);
+
+	DirectX::XMMATRIX wvp = (DirectX::XMMATRIX)world * (DirectX::XMMATRIX)viewMatrix * (DirectX::XMMATRIX)projMatrix;
+	//objectBufferData.WorldViewProjectionMatrix = DirectX::XMMatrixMultiply(DirectX::XMMatrixMultiply(world, viewMatrix), projMatrix);
+	objectBufferData.WorldViewProjectionMatrix = wvp;
+	dxDeviceContext->UpdateSubresource(textureConstantBuffer, 0, 0, &objectBufferData, 0, 0);
+
+	//ready the vertex buffer
+	UINT stride = sizeof(Vertex);
+	UINT offset = 0;
+	dxDeviceContext->IASetVertexBuffers(
+		0,                //the first input slot for binding
+		1,                //the number of buffers in the array
+		&textImageInfo->vertexBuffer,			  //the array of vertex buffers
+		&stride,          //array of stride values, one for each buffer
+		&offset);         //array of offset values, one for each buffer
+	dxDeviceContext->IASetIndexBuffer(textImageInfo->indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	dxDeviceContext->IASetInputLayout(textureVertexInputLayout);
+	//bind shaders
+	dxDeviceContext->VSSetShader(textureVertexShader, 0, 0);
+	dxDeviceContext->VSSetConstantBuffers(0, 1, &textureConstantBuffer);
+	dxDeviceContext->PSSetShader(texturePixelShader, 0, 0);
+	dxDeviceContext->UpdateSubresource(materialConstantBuffer, 0, 0, &textImageInfo->mesh->materials.at(0), 0, 0);
+	ID3D11Buffer *pixelShaderConstantBuffers[2] = { materialConstantBuffer, lightingConstantBuffer };
+	dxDeviceContext->PSSetConstantBuffers(0, 2, pixelShaderConstantBuffers);
+
+	dxDeviceContext->PSSetSamplers(0, 1, &textureSamplerState);
+	dxDeviceContext->PSSetShaderResources(0, 1, &textImageInfo->mesh->textureMapSRV.at(0));
+
+	dxDeviceContext->OMSetRenderTargets(1, &renderTargetview, depthStencilView);
+	dxDeviceContext->OMSetDepthStencilState(depthStencilState, 1);
+	//draw
+	dxDeviceContext->DrawIndexed(textImageInfo->totalIndices, 0, 0);
+
+	/*WVP = XMMatrixIdentity();
+	cbPerObj.WVP = XMMatrixTranspose(WVP);
+	dxDeviceContext->UpdateSubresource(cbPerObjectBuffer, 0, NULL, &cbPerObj, 0, 0);
+	dxDeviceContext->VSSetConstantBuffers(0, 1, &cbPerObjectBuffer);
+	dxDeviceContext->PSSetShaderResources(0, 1, &d2dTexture);
+	dxDeviceContext->PSSetSamplers(0, 1, &CubesTexSamplerState);
+
+	dxDeviceContext->RSSetState(CWcullMode);
+	//Draw the second cube
+	dxDeviceContext->DrawIndexed(6, 0, 0);*/
+
+	//set back to opaque
+	dxDeviceContext->OMSetBlendState(NULL, NULL, 0xffffffff);
 }

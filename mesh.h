@@ -27,6 +27,7 @@ public:
 	void createGrid(float width, float depth, UINT m, UINT n, ImageInfo *image);
 	void createSphere(float radius, float divisions, ImageInfo *image);
 	void createRect(float length, float width, ImageInfo *image);
+	void createRect(float length, float width, TextImageInfo *image);
 };
 
 #endif

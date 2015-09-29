@@ -25,7 +25,7 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 	#endif*/
 
-	MSG msg;
+	MSG msg = { NULL };
 	game = new JPCPractice;
 
 	//Create window
@@ -37,15 +37,11 @@ int WINAPI WinMain(HINSTANCE hInstance,
 		game->initialize(hwnd);
 
 		//main message loop
-		int done = 0;
-		while(!done)
+		while (msg.message != WM_QUIT)
 		{
 			//non blocking method for checking for windows messages
 			if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 			{
-				//look for quit messages
-				if(msg.message == WM_QUIT)
-					done = 1;
 				//decode and pass messages to winproc
 				TranslateMessage(&msg);
 				DispatchMessage(&msg);

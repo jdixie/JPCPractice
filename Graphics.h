@@ -208,6 +208,30 @@ struct ImageInfo
 	MeshData *mesh;
 };
 
+struct TextImageInfo
+{
+	float x;
+	float y;
+	float z;
+	Matrix4 rotation;
+	UINT totalVertices;
+	UINT totalIndices;
+	UINT totalMaterials;
+	ID3D11Buffer *vertexBuffer;
+	ID3D11Buffer *indexBuffer;
+	float blendFactors[4]; //for transparency blending, 0-1 per term
+	MeshData *mesh;
+	std::wstring text;
+
+	IDXGIKeyedMutex *keyedMutex11;
+	IDXGIKeyedMutex *keyedMutex10;
+	ID3D11Texture2D *sharedTex11;
+	ID2D1RenderTarget *D2DRenderTarget;
+	ID2D1SolidColorBrush *Brush;
+	ID3D11Texture2D *BackBuffer11;
+	IDWriteTextFormat *TextFormat;
+};
+
 //shader info
 enum ColorConstantBuffer
 {
@@ -463,8 +487,7 @@ private:
 
 	std::wstring printText;
 
-	bool InitD2D_D3D101_DWrite();
-	void InitD2DScreenTexture();
+	bool InitD3D101_DWrite();
 
 public:
 	//camera class - located here to provide the ability to the camera to create world transforms in addition
@@ -578,10 +601,27 @@ public:
 	virtual void drawTextured(ImageInfo *image);
 	//virtual void drawColored(ImageInfo *image);
 
+	//for ray picking
+	DirectX::XMVECTOR getCameraPos() { return camera.getPosition(); }
+	DirectX::XMVECTOR getCameraTarget() { return camera.getTarget(); }
+	float getProjMatrixPosition(int a) { 
+		DirectX::XMFLOAT4X4 proj44;
+		DirectX::XMStoreFloat4x4(&proj44, projMatrix);
+		if (a == 11)
+			return proj44._22;
+		else
+			return proj44._11;
+	}
+
 	//blending
 	virtual void setBlendStateNotTransparent() { dxDeviceContext->OMSetBlendState(NULL, NULL, 0xffffffff); }
 	virtual void setBlendStateTransparent(float blendFactors[]) { dxDeviceContext->OMSetBlendState(transparentBS, blendFactors, 0xffffffff); }
+
 	void renderText(std::wstring text);// , ImageInfo *image);
+	void drawTextRect(TextImageInfo *textImageInfo);
+
+	//for writing text to a texture
+	void InitD2DRectTexture(TextImageInfo *textImagenfo, float textSize);
 };
 
 #endif

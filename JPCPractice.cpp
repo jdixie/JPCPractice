@@ -25,7 +25,7 @@ void JPCPractice::initialize(HWND hw)
 
 	Game::initialize(hw, nGameWidth, nGameHeight, bFullScreen);
 
-//	ShowCursor(false);
+	ShowCursor(true);
 
 	if (bFullScreen)
 	{
@@ -77,7 +77,6 @@ void JPCPractice::initialize(HWND hw)
 	}
 
 	player.initialize(input, graphics, 0, 0, 1);
-	loadLevel(0);
 	//geometry.at(0)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(.4, .4, .4, 1);
 	//geometry.at(0)->rotate(90, 1, 0, 0);
 
@@ -93,113 +92,72 @@ void JPCPractice::initialize(HWND hw)
 	//set up play screens: vertically 0-4 are column 1 100-500, 5-9 are column 2 100-500, etc.
 	//25-29 are the category screens across the top
 	//center of each play screen, since looking down x axis, all x will be the same
+
+	//load and ready bluescreens
 	float yc = 225;
-	float zc = -400;
+	float xc = -500;
 	for (int i = 0; i < 30; i++)
 	{
 		Object *screen = new Object;
 		screen->initialize(graphics, 0, 0, 1);
 		screen->getImageInfo()->mesh = new MeshData;
-		meshHandler.createRect(145, 195, screen->getImageInfo());
+		meshHandler.createRect(245, 145, screen->getImageInfo());
 		//screen->getImageInfo()->mesh->textureMapSRV.push_back(graphics->createTextureSRV(L"mesh\\darkblue.jpg"));
 		screen->getImageInfo()->mesh->textureMapSRV.push_back(textureManager.loadTexture(L"mesh\\darkblue.jpg"));
 		screen->setVertices();
 		entity.push_back(screen);
 		entity.at(i)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
-		entity.at(i)->rotate(90, 0, 0, 1);
-		entity.at(i)->setX(1000);
+		entity.at(i)->rotate(90, 1, 0, 0);
+		entity.at(i)->setZ(1050);
 
 		if (i < 25)
 		{
 			if (i % 5 == 0 & i != 0)
 			{
 				yc = 225;
-				zc += 200;
+				xc += 250;
 			}
 
 			entity.at(i)->setY(yc);
 			yc -= 150;
-			entity.at(i)->setZ(zc);	
+			entity.at(i)->setX(xc);
 
 			if (i == 24) //set-up for category play screens
 			{
 				yc = 375;
-				zc = -400;
+				xc = -500;
 			}
 		}
 		else
 		{
 			entity.at(i)->setY(yc);
-			entity.at(i)->setZ(zc);
-			zc += 200;
+			entity.at(i)->setX(xc);
+			xc += 250;
 		}
 	}
 
+	loadLevel(1);
+
 	graphics->camera.setCamType(CamType::FPS);
 	graphics->camera.initialize();
-	graphics->camera.setPosition(0, 0, 0, 0, 0);
+	graphics->camera.setPosition(0, 0, 0, 0, 90);
+	rxz = 90;
 }
 
 void JPCPractice::update()
 {
-	/*if (input->isKeyDown(TURN_LEFT))//VK_LEFT))
-		//incX -= 10;
-		incA += 1;
-	if (input->isKeyDown(TURN_RIGHT))//VK_RIGHT))
-		//incX += 10;
-		incA -= 1;
-	if (input->isKeyDown(MOVE_Y_POS))//VK_UP))
-		incY += 10;
-	if (input->isKeyDown(MOVE_Y_NEG))//VK_DOWN))
-		incY -= 10;
-	if (input->isKeyDown(MOVE_BACKWARD))
+	if (input->getMouseLButton())
 	{
-		//incZ -= 10;
-		cameraX -= 10 * cos(theta);
-		cameraZ -= 10 * sin(theta);
+		//compute ray for clicked spot  in view space
+		float vx = ((2 * input->getMouseX() / nGameWidth) - 1) / graphics->getProjMatrixPosition(0);
+		float vy = ((2 * input->getMouseY() / nGameHeight) - 1) / graphics->getProjMatrixPosition(11);
+		float vz = 1;
+
+		//input->setMouseLButton(false);
 	}
-	if (input->isKeyDown(MOVE_FORWARD))
-	{
-		//incZ += 10;
-		cameraX += 10 * cos(theta);
-		cameraZ += 10 * sin(theta);
-	}*/
-	if (input->isKeyDown(UP_ARROW))
-		cameraZ += 15;
-	if (input->isKeyDown(DOWN_ARROW))
-		cameraZ -= 15;
-	if (input->isKeyDown(RIGHT_ARROW))
-		cameraX += 15;
-	if (input->isKeyDown(LEFT_ARROW))
-		cameraX -= 15;
-	if (input->isKeyDown(MOVE_Y_POS))
-		cameraY += 15;
-	if (input->isKeyDown(MOVE_Y_NEG))
-		cameraY -= 15;
-	if (input->wasKeyPressed(ROTATE_CW))
-		rxz += 45;
-	if (input->wasKeyPressed(ROTATE_CCW))
-		rxz -= 45;
-
-	if (rxz == 360 || rxz == -360)
-		rxz = 0;
-
-	//cameraZ = incZ;
-	//cameraY = incY;
-	//cameraX = incX;
-
-	if (incA == 2 * TURN_DIVISIONS)
-		incA = 0;
-	else if (incA == -2 * TURN_DIVISIONS)
-		incA = 0;
-
-	theta = (incA * PI) / TURN_DIVISIONS;
-
-	targetX = cameraX + cos(theta);
-	targetZ = cameraZ + sin(theta);
 
 	//update collisionGrid - clear entries
-	updateCollisionGrid();
+	//updateCollisionGrid();
 
 	//update player, npc's, objects, and images to set their temporary movement variables
 	//player.update(fFrameTime, fGameScale);
@@ -209,8 +167,8 @@ void JPCPractice::update()
 	//check fo collisions between player and geometry, npc and geometry, player and npc, objects and everything else
 	//loop it to run 3-ish times to check for new collisions after adjustments
 	//debug - call only on movement
-	if (player.getVelocity().x != 0 || player.getVelocity().y != 0 || player.getVelocity().z != 0)
-		geometryCollide();
+	//if (player.getVelocity().x != 0 || player.getVelocity().y != 0 || player.getVelocity().z != 0)
+	//	geometryCollide();
 
 	//	player.finalizeMovement();
 
@@ -261,8 +219,10 @@ void JPCPractice::render()
 		image[i]->draw();
 	for (int i = 0; i < npc.size(); i++)
 		npc[i]->draw();
-	graphics->renderText(L"Test テスト");
-	graphics->renderText(L"Over or replace?");
+	//graphics->renderText(L"Test テスト");
+	//graphics->renderText(L"Over or replace?");
+	for (int i = 0; i < textImages.size(); i++)
+		graphics->drawTextRect(textImages.at(i));
 }
 
 void JPCPractice::loadConfig()
@@ -270,7 +230,7 @@ void JPCPractice::loadConfig()
 	std::string s;
 	std::string v;
 	std::ifstream configFile;
-	configFile.open("Auramancer.cfg");
+	configFile.open("JCP.cfg");
 
 	if (configFile.is_open())
 	{
@@ -328,16 +288,90 @@ bool JPCPractice::loadLevel(int level)
 	std::ifstream levelFile;
 	int tempLevel;
 
-	//for testing purposes, be sure to remove
-/*	Object *tempLand = new Object();
-	tempLand->getImageInfo()->mesh = new MeshData();
-	tempLand->getImageInfo()->mesh->textureMapSRV.push_back(graphics->createTextureSRV(L"mesh\\stone_floor.jpg"));
-	meshHandler.createGrid(10000, 10000, 10, 10, tempLand->getImageInfo());
-	tempLand->setCoords(0, 0, -1000);
+	/*TextImageInfo *temp = new TextImageInfo;
+	temp->mesh = new MeshData;
+	meshHandler.createRect(245, 145, temp);
+	temp->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+	temp->text = L"Test";
+	textImages.push_back(temp);
+	graphics->InitD2DRectTexture(textImages.at(0));
+	textImages.at(0)->z = 1049;
+	textImages.at(0)->rotation.makeRotate(-90, 1, 0, 0);
 
-	tempLand->initialize(graphics, 0, 0, fGameScale);
-	tempLand->setVertices();
-	geometry.push_back(tempLand);*/
+	TextImageInfo *temp2 = new TextImageInfo;
+	temp2->mesh = new MeshData;
+	meshHandler.createRect(245, 145, temp2);
+	temp2->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+	temp2->text = L"Other";
+	textImages.push_back(temp2);
+	graphics->InitD2DRectTexture(textImages.at(1));
+	textImages.at(1)->z = 1049;
+	textImages.at(1)->y = 400;
+	textImages.at(1)->rotation.makeRotate(-90, 1, 0, 0);*/
+
+	//play screen reminder: vertically 0-4 are column 1 100-500, 5-9 are column 2 100-500, etc.
+	//25-29 are the category screens across the top
+	//center of each play screen, since looking down x axis, all x will be the same
+
+	//load questions and text for screens
+	switch (level)
+	{
+	case 2:
+	case 1:
+	default:
+		float yc = 225;
+		float xc = -500;
+		for (int i = 0; i < 25; i++)
+		{
+			TextImageInfo *temp = new TextImageInfo;
+			temp->mesh = new MeshData;
+			meshHandler.createRect(245, 145, temp);
+			temp->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+			temp->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
+
+			int value = (i % 5) * 100 + 100;
+			temp->text = std::to_wstring(value);
+
+			textImages.push_back(temp);
+			graphics->InitD2DRectTexture(textImages.at(i), 256);
+			textImages.at(i)->z = 1049;
+			textImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
+
+			if (i % 5 == 0 & i != 0)
+			{
+				yc = 225;
+				xc += 250;
+			}
+
+			textImages.at(i)->y = yc;
+			yc -= 150;
+			textImages.at(i)->x = xc;
+		}
+
+		yc = 375;
+		xc = -500;
+
+		for (int i = 25; i < 30; i++)
+		{
+			TextImageInfo *temp = new TextImageInfo;
+			temp->mesh = new MeshData;
+			meshHandler.createRect(245, 145, temp);
+			temp->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+			temp->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
+
+			temp->text = L"Category";
+
+			textImages.push_back(temp);
+			graphics->InitD2DRectTexture(textImages.at(i), 144);
+			textImages.at(i)->z = 1049;
+			textImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
+
+			textImages.at(i)->y = yc;
+			textImages.at(i)->x = xc;
+			xc += 250;
+		}
+		break;
+	}
 
 	return true;
 }
