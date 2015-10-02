@@ -24,6 +24,7 @@
 #include "SkinnedData.h"
 #include "camera.h"
 #include "Matrix4.h"
+#include "Vector3.h"
 
 //necessary for text rom braynzarsoft
 #include <D3D10_1.h>
@@ -228,7 +229,6 @@ struct TextImageInfo
 	ID3D11Texture2D *sharedTex11;
 	ID2D1RenderTarget *D2DRenderTarget;
 	ID2D1SolidColorBrush *Brush;
-	ID3D11Texture2D *BackBuffer11;
 	IDWriteTextFormat *TextFormat;
 };
 
@@ -270,6 +270,11 @@ private:
 	ID3D11DepthStencilState *depthStencilState;
 	D3D11_VIEWPORT viewport;
 	ID3D11RasterizerState *rasterizerState;		//rasterization state pointer
+	//used for text texturing
+	IDXGIAdapter1 *adapter;
+	ID3D10Device1 *d3d101Device;
+	ID3D11Texture2D *backBuffer11;
+	IDWriteFactory *dWriteFactory;
 
 	//shader data
 	ID3D11VertexShader *textureVertexShader;
@@ -286,8 +291,10 @@ private:
 	ID3D11InputLayout *colorVertexInputLayout;	//input layout for vertex with color
 
 	PerObjectConstantBufferData objectBufferData;
-	DirectX::XMMATRIX viewMatrix;
-	DirectX::XMMATRIX projMatrix;
+	//DirectX::XMMATRIX viewMatrix;
+	//DirectX::XMMATRIX projMatrix;
+	DirectX::XMFLOAT4X4 viewMatrix;
+	DirectX::XMFLOAT4X4 projMatrix;
 
 /*	ID3DX11EffectShaderResourceVariable *fxTextureMap;	//for texturing*/
 	//move this to imageinfo later, here for testing
@@ -468,25 +475,6 @@ private:
 		return shader;
 	}
 
-	//for writing surface creation, mostly from braynzarsoft
-	IDXGIAdapter1 *adapter;
-	ID3D10Device1 *d3d101Device;
-	IDXGIKeyedMutex *keyedMutex11;
-	IDXGIKeyedMutex *keyedMutex10;
-	ID2D1RenderTarget *D2DRenderTarget;
-	ID2D1SolidColorBrush *Brush;
-	ID3D11Texture2D *BackBuffer11;
-	ID3D11Texture2D *sharedTex11;
-	ID3D11Buffer *d2dVertBuffer;
-	ID3D11Buffer *d2dIndexBuffer;
-	ID3D11ShaderResourceView *d2dTexture;
-	IDWriteFactory *DWriteFactory;
-	IDWriteTextFormat *TextFormat;
-	ID3D11BlendState *Transparency;
-	ImageInfo textImage;
-
-	std::wstring printText;
-
 	bool InitD3D101_DWrite();
 
 public:
@@ -605,12 +593,12 @@ public:
 	DirectX::XMVECTOR getCameraPos() { return camera.getPosition(); }
 	DirectX::XMVECTOR getCameraTarget() { return camera.getTarget(); }
 	float getProjMatrixPosition(int a) { 
-		DirectX::XMFLOAT4X4 proj44;
-		DirectX::XMStoreFloat4x4(&proj44, projMatrix);
+		//DirectX::XMFLOAT4X4 proj44;
+		//DirectX::XMStoreFloat4x4(&proj44, projMatrix);
 		if (a == 11)
-			return proj44._22;
+			return projMatrix._22;
 		else
-			return proj44._11;
+			return projMatrix._11;
 	}
 
 	//blending
@@ -622,6 +610,9 @@ public:
 
 	//for writing text to a texture
 	void InitD2DRectTexture(TextImageInfo *textImagenfo, float textSize);
+
+	//picking
+	void getPickRay(float sx, float sy, Vector3 *rayPos, Vector3 *rayDir);
 };
 
 #endif

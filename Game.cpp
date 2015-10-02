@@ -433,6 +433,16 @@ void Game::resetAll()
 
 void Game::deleteAll()
 {
+	for (int i = 0; i < textImages.size(); i++)
+	{
+		textImages.at(i)->D2DRenderTarget->Release();
+		textImages.at(i)->indexBuffer->Release();
+		textImages.at(i)->keyedMutex10->Release();
+		textImages.at(i)->keyedMutex11->Release();
+		textImages.at(i)->sharedTex11->Release();
+		textImages.at(i)->TextFormat->Release();
+		textImages.at(i)->vertexBuffer->Release();
+	}
 	emptyCollisionGrid();
     releaseAll();
 	safeDelete(graphics);

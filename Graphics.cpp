@@ -18,6 +18,7 @@ Graphics::Graphics()
 
 Graphics::~Graphics()
 {
+	swapChain->SetFullscreenState(false, NULL);
 	//unloadables?
 	safeRelease(colorConstantBuffers[CCB_Application]);
 	safeRelease(colorConstantBuffers[CCB_Frame]);
@@ -40,18 +41,7 @@ Graphics::~Graphics()
 
 	safeRelease(adapter);
 	safeRelease(d3d101Device);
-	safeRelease(keyedMutex11);
-	safeRelease(keyedMutex10);
-	safeRelease(D2DRenderTarget);
-	safeRelease(Brush);
-	safeRelease(BackBuffer11);
-	safeRelease(sharedTex11);
-	safeRelease(d2dVertBuffer);
-	safeRelease(d2dIndexBuffer);
-	safeRelease(d2dTexture);
-	safeRelease(DWriteFactory);
-	safeRelease(TextFormat);
-	safeRelease(Transparency);
+	safeRelease(backBuffer11);
 }
 
 //initialize graphics device and properties
@@ -345,8 +335,8 @@ void Graphics::initialize(HWND hwnd, float w, float h, bool full)
 	objectBufferData.WorldMatrix = identityMatrix;
 	objectBufferData.InverseTransposeWorldMatrix = identityMatrix;
 	objectBufferData.WorldViewProjectionMatrix = identityMatrix;
-	viewMatrix = identityMatrix;
-	projMatrix = identityMatrix;
+	DirectX::XMStoreFloat4x4(&viewMatrix, identityMatrix);
+	DirectX::XMStoreFloat4x4(&projMatrix, identityMatrix);
 
 	setProjMatrix();
 
@@ -417,7 +407,8 @@ void Graphics::setNoCullRastState()
 
 void Graphics::setProjMatrix()
 {
-	projMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), width / height, 1.0f, 10000.0f);
+	DirectX::XMMATRIX projMatrixAsMatrix = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(45.0f), width / height, 1.0f, 10000.0f);
+	DirectX::XMStoreFloat4x4(&projMatrix, projMatrixAsMatrix);
 	dxDeviceContext->UpdateSubresource(colorConstantBuffers[CCB_Application], 0, 0, &projMatrix, 0, 0);
 }
 
@@ -429,7 +420,8 @@ void Graphics::setProjMatrix()
 //}
 void Graphics::setViewMatrix()
 {
-	viewMatrix = DirectX::XMMatrixLookAtLH(camera.getPosition(), camera.getTarget(), camera.getUp());
+	DirectX::XMMATRIX viewMatrixAsMatrix = DirectX::XMMatrixLookAtLH(camera.getPosition(), camera.getTarget(), camera.getUp());
+	DirectX::XMStoreFloat4x4(&viewMatrix, viewMatrixAsMatrix);
 	dxDeviceContext->UpdateSubresource(colorConstantBuffers[CCB_Frame], 0, 0, &viewMatrix, 0, 0);
 }
 
@@ -483,7 +475,10 @@ void Graphics::drawTextured(ImageInfo *image)
 	//DirectX::XMMATRIX worldInvTrans = DirectX::XMMatrixTranspose(worldInv);
 	objectBufferData.InverseTransposeWorldMatrix = DirectX::XMMatrixTranspose(worldInv);
 
-	DirectX::XMMATRIX wvp = (DirectX::XMMATRIX)world * (DirectX::XMMATRIX)viewMatrix * (DirectX::XMMATRIX)projMatrix;
+	DirectX::XMMATRIX viewMatrixAsMatrix = DirectX::XMLoadFloat4x4(&viewMatrix);
+	DirectX::XMMATRIX projMatrixAsMatrix = DirectX::XMLoadFloat4x4(&projMatrix);
+
+	DirectX::XMMATRIX wvp = (DirectX::XMMATRIX)world * (DirectX::XMMATRIX)viewMatrixAsMatrix * (DirectX::XMMATRIX)projMatrixAsMatrix;
 	//objectBufferData.WorldViewProjectionMatrix = DirectX::XMMatrixMultiply(DirectX::XMMatrixMultiply(world, viewMatrix), projMatrix);
 	objectBufferData.WorldViewProjectionMatrix = wvp;
 	dxDeviceContext->UpdateSubresource(textureConstantBuffer, 0, 0, &objectBufferData, 0, 0);
@@ -820,10 +815,11 @@ void Graphics::InitD2DRectTexture(TextImageInfo *textImageInfo, float textSize)
 	hr = textImageInfo->D2DRenderTarget->CreateSolidColorBrush(D2D1::ColorF(1.0f, 1.0f, 0.0f, 1.0f), &textImageInfo->Brush);
 
 	//DirectWrite///////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//how many times must this be done, can I do it once?
 	hr = DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory),
-		reinterpret_cast<IUnknown**>(&DWriteFactory));
+		reinterpret_cast<IUnknown**>(&dWriteFactory));
 
-	hr = DWriteFactory->CreateTextFormat(
+	hr = dWriteFactory->CreateTextFormat(
 		L"Script",
 		NULL,
 		DWRITE_FONT_WEIGHT_REGULAR,
@@ -1105,7 +1101,10 @@ void Graphics::drawTextRect(TextImageInfo *textImageInfo)
 	//DirectX::XMMATRIX worldInvTrans = DirectX::XMMatrixTranspose(worldInv);
 	objectBufferData.InverseTransposeWorldMatrix = DirectX::XMMatrixTranspose(worldInv);
 
-	DirectX::XMMATRIX wvp = (DirectX::XMMATRIX)world * (DirectX::XMMATRIX)viewMatrix * (DirectX::XMMATRIX)projMatrix;
+	DirectX::XMMATRIX viewMatrixAsMatrix = DirectX::XMLoadFloat4x4(&viewMatrix);
+	DirectX::XMMATRIX projMatrixAsMatrix = DirectX::XMLoadFloat4x4(&projMatrix);
+
+	DirectX::XMMATRIX wvp = (DirectX::XMMATRIX)world * (DirectX::XMMATRIX)viewMatrixAsMatrix * (DirectX::XMMATRIX)projMatrixAsMatrix;
 	//objectBufferData.WorldViewProjectionMatrix = DirectX::XMMatrixMultiply(DirectX::XMMatrixMultiply(world, viewMatrix), projMatrix);
 	objectBufferData.WorldViewProjectionMatrix = wvp;
 	dxDeviceContext->UpdateSubresource(textureConstantBuffer, 0, 0, &objectBufferData, 0, 0);
@@ -1151,4 +1150,36 @@ void Graphics::drawTextRect(TextImageInfo *textImageInfo)
 
 	//set back to opaque
 	dxDeviceContext->OMSetBlendState(NULL, NULL, 0xffffffff);
+}
+
+void Graphics::getPickRay(float sx, float sy, Vector3 *rayPos, Vector3 *rayDir)
+{
+	XMVECTOR pickRayInViewSpaceDir = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+	XMVECTOR pickRayInViewSpacePos = XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f);
+
+	float vx = ((2 * sx / width) - 1) / getProjMatrixPosition(0);
+	float vy = ((2 * sy / height) - 1) / getProjMatrixPosition(11);
+	float vz = 1;
+
+	pickRayInViewSpaceDir = XMVectorSet(vx, vy, vz, 0.0f);
+
+	//if fps-ish and want from center do:
+	//DirectX::XMVECTOR pickRayInViewSpaceDir = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+
+	// Transform 3D Ray from View space to 3D ray in World space
+	DirectX::XMMATRIX pickRayToWorldSpaceMatrix;
+	DirectX::XMVECTOR matInvDeter;	//We don't use this, but the xna matrix inverse function requires the first parameter to not be null
+
+	pickRayToWorldSpaceMatrix = XMMatrixInverse(&matInvDeter, DirectX::XMLoadFloat4x4(&viewMatrix));	//Inverse of View Space matrix is World space matrix
+
+	DirectX::XMVECTOR pickRayInWorldSpacePos = XMVector3TransformCoord(pickRayInViewSpacePos, pickRayToWorldSpaceMatrix);
+	DirectX::XMVECTOR pickRayInWorldSpaceDir = XMVector3TransformNormal(pickRayInViewSpaceDir, pickRayToWorldSpaceMatrix);
+
+	rayPos->x = DirectX::XMVectorGetByIndex(pickRayInWorldSpacePos, 0);
+	rayPos->y = DirectX::XMVectorGetByIndex(pickRayInWorldSpacePos, 1);
+	rayPos->z = DirectX::XMVectorGetByIndex(pickRayInWorldSpacePos, 2);
+
+	rayDir->x = DirectX::XMVectorGetByIndex(pickRayInWorldSpaceDir, 0);
+	rayDir->y = DirectX::XMVectorGetByIndex(pickRayInWorldSpaceDir, 1);
+	rayDir->z = DirectX::XMVectorGetByIndex(pickRayInWorldSpaceDir, 2);
 }

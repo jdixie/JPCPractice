@@ -142,19 +142,142 @@ void JPCPractice::initialize(HWND hw)
 	graphics->camera.initialize();
 	graphics->camera.setPosition(0, 0, 0, 0, 90);
 	rxz = 90;
+
+	initializeChosenQuestions();
 }
 
 void JPCPractice::update()
 {
-	if (input->getMouseLButton())
+	if (animating)
 	{
-		//compute ray for clicked spot  in view space
-		float vx = ((2 * input->getMouseX() / nGameWidth) - 1) / graphics->getProjMatrixPosition(0);
-		float vy = ((2 * input->getMouseY() / nGameHeight) - 1) / graphics->getProjMatrixPosition(11);
-		float vz = 1;
+		if (passes <= animationDivisions)
+		{
+			entity.at(questionIndex)->setX(entity.at(questionIndex)->getX() + xIncr);
+			entity.at(questionIndex)->setY(entity.at(questionIndex)->getY() + yIncr);
+			entity.at(questionIndex)->setZ(entity.at(questionIndex)->getZ() + zIncr);
+			textImages.at(questionIndex)->x = textImages.at(questionIndex)->x + xIncr;
+			textImages.at(questionIndex)->y = textImages.at(questionIndex)->y + yIncr;
+			textImages.at(questionIndex)->z = textImages.at(questionIndex)->z + zIncr;
+			if (entity.at(questionIndex)->getZ() < 170)
+			{
+				entity.at(questionIndex)->setX(0);
+				entity.at(questionIndex)->setY(0);
+				entity.at(questionIndex)->setZ(170);
+				textImages.at(questionIndex)->x = 0;
+				textImages.at(questionIndex)->y = 0;
+				textImages.at(questionIndex)->z = 169;
+			}
 
-		//input->setMouseLButton(false);
+			passes++;
+		}
+		else
+		{
+			animating = false;
+			questionWaiting = true;
+		}
 	}
+	else if (questionWaiting)
+	{
+		questionCountdown--;
+		if (questionCountdown < 0)
+		{
+			questionWaiting = false;
+			questionMode = true;
+			questionCountdown = 20;
+			chosenQuestion[questionIndex] = true;
+			numberChosen++;
+		}
+	}
+	else if (questionMode)
+	{
+		if (input->getMouseLButton())
+		{
+			input->setMouseLButton(false);
+			questionMode = false;
+			answerMode = true;
+		}
+	}
+	else if (answerMode)
+	{
+		if (input->getMouseLButton())
+		{
+			input->setMouseLButton(false);
+			answerMode = false;
+			entity.at(questionIndex)->setX(questionScreenOriginalX);
+			entity.at(questionIndex)->setY(questionScreenOriginalY);
+			entity.at(questionIndex)->setZ(questionScreenOriginalZ);
+			textImages.at(questionIndex)->x = questionScreenOriginalX;
+			textImages.at(questionIndex)->y = questionScreenOriginalY;
+			textImages.at(questionIndex)->z = questionScreenOriginalZ - 1;
+			entity.at(questionIndex)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 0, 0, 1);
+			questionIndex = -1;
+		}
+	}
+	else
+	{
+		if (numberChosen == 25 && currentLevel == 1)
+		{
+			initializeChosenQuestions();
+			loadLevel(2);
+		}
+
+		if (input->getMouseLButton())
+		{
+			input->setMouseLButton(false);
+			//compute ray for clicked spot  in view space
+			Vector3 rayPos, rayDir, dirFrac;
+			graphics->getPickRay(input->getMouseX(), input->getMouseY(), &rayPos, &rayDir);
+
+			for (int i = 0; i < 25; i++)
+			{
+				dirFrac.x = 1.0f / rayDir.x;
+				dirFrac.y = -1.0f / rayDir.y;
+				dirFrac.z = 1.0f / rayDir.z;
+
+				float t1 = (entity.at(i)->getX() - 122.5 - rayPos.x)*dirFrac.x;
+				float t2 = (entity.at(i)->getX() + 122.5 - rayPos.x)*dirFrac.x;
+				float t3 = (entity.at(i)->getY() - 72.5 - rayPos.y)*dirFrac.y;
+				float t4 = (entity.at(i)->getY() + 72.5 - rayPos.y)*dirFrac.y;
+				float t5 = (entity.at(i)->getZ() - rayPos.z)*dirFrac.z;
+				//float t6 = (entity.at(i)->getZ() - rayPos.z)*dirFrac.z;
+
+				float tmin = max(max(min(t1, t2), min(t3, t4)), t5);
+				float tmax = min(min(max(t1, t2), max(t3, t4)), t5);
+
+				//if tmax < 0, ray (line) is intersecting AABB, but whole AABB is behing us
+				if (tmax < 0)
+				{
+					continue;
+				}
+				//if tmin > tmax, ray doesn't intersect AABB
+				else if (tmin > tmax)
+				{
+					continue;
+				}
+				//entity.at(i) was picked
+				else
+				{
+					//entity.at(i)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 0, 0, 1);
+					//chosenQuestion[i] = true;
+					//numberChosen++;
+
+					//z diff = 880
+					questionIndex = i;
+					questionScreenOriginalX = entity.at(i)->getX();
+					questionScreenOriginalY = entity.at(i)->getY();
+					questionScreenOriginalZ = entity.at(i)->getZ();
+					xIncr = (0 - questionScreenOriginalX) / animationDivisions;
+					yIncr = (0 - questionScreenOriginalY) / animationDivisions;
+					zIncr = (-880 / animationDivisions);
+					passes = 0;
+
+					animating = true;
+					break;
+				}
+			}
+		}
+	}
+
 
 	//update collisionGrid - clear entries
 	//updateCollisionGrid();
@@ -222,7 +345,14 @@ void JPCPractice::render()
 	//graphics->renderText(L"Test テスト");
 	//graphics->renderText(L"Over or replace?");
 	for (int i = 0; i < textImages.size(); i++)
-		graphics->drawTextRect(textImages.at(i));
+	{
+		if ((i < 25 && chosenQuestion[i] == false) || (i >= 25))
+			graphics->drawTextRect(textImages.at(i));
+	}
+	if (questionMode)
+		graphics->drawTextRect(questionTextImages.at(questionIndex));
+	if (answerMode)
+		graphics->drawTextRect(answerTextImages.at(questionIndex));
 }
 
 void JPCPractice::loadConfig()
@@ -314,15 +444,121 @@ bool JPCPractice::loadLevel(int level)
 	//center of each play screen, since looking down x axis, all x will be the same
 
 	//load questions and text for screens
+	float yc = 225;
+	float xc = -500;
 	switch (level)
 	{
 	case 2:
-	case 1:
-	default:
-		float yc = 225;
-		float xc = -500;
+		textImages.clear();
+		questionTextImages.clear();
+		answerTextImages.clear();
 		for (int i = 0; i < 25; i++)
 		{
+			entity.at(i)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+			TextImageInfo *temp = new TextImageInfo;
+			temp->mesh = new MeshData;
+			meshHandler.createRect(245, 145, temp);
+			temp->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+			temp->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
+
+			int value = ((i % 5) * 100 + 100) * 2;
+			temp->text = std::to_wstring(value);
+
+			textImages.push_back(temp);
+			graphics->InitD2DRectTexture(textImages.at(i), 256);
+			textImages.at(i)->z = 1049;
+			textImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
+
+			if (i % 5 == 0 & i != 0)
+			{
+				yc = 225;
+				xc += 250;
+			}
+
+			textImages.at(i)->y = yc;
+			yc -= 150;
+			textImages.at(i)->x = xc;
+		}
+
+		yc = 375;
+		xc = -500;
+
+		for (int i = 25; i < 30; i++)
+		{
+			TextImageInfo *temp = new TextImageInfo;
+			temp->mesh = new MeshData;
+			meshHandler.createRect(245, 145, temp);
+			temp->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+			temp->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
+
+			switch (i)
+			{
+			case 25:
+				temp->text = L"Place names";
+				break;
+			case 26:
+				temp->text = L"? Kanji";
+				break;
+			case 27:
+				temp->text = L"Idioms";
+				break;
+			case 28:
+				temp->text = L"かたかな";
+				break;
+			case 29:
+				temp->text = L"Language Tasks";
+				break;
+			default:
+				temp->text = L"Category";
+				break;
+			}
+
+			textImages.push_back(temp);
+			graphics->InitD2DRectTexture(textImages.at(i), 144);
+			textImages.at(i)->z = 1049;
+			textImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
+
+			textImages.at(i)->y = yc;
+			textImages.at(i)->x = xc;
+			xc += 250;
+		}
+
+		//load question screens and answers
+		for (int i = 0; i < 25; i++)
+		{
+			TextImageInfo *temp1 = new TextImageInfo;
+			temp1->mesh = new MeshData;
+			meshHandler.createRect(245, 145, temp1);
+			temp1->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+			temp1->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
+
+			TextImageInfo *temp2 = new TextImageInfo;
+			temp2->mesh = new MeshData;
+			meshHandler.createRect(245, 145, temp2);
+			temp2->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+			temp2->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
+
+			temp1->text = L"The question goes here....";
+			temp2->text = L"....and the answer (with other info) goes here";
+
+			questionTextImages.push_back(temp1);
+			graphics->InitD2DRectTexture(questionTextImages.at(i), 64);
+			questionTextImages.at(i)->z = 169;
+			questionTextImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
+
+			answerTextImages.push_back(temp2);
+			graphics->InitD2DRectTexture(answerTextImages.at(i), 64);
+			answerTextImages.at(i)->z = 169;
+			answerTextImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
+		}
+
+		currentLevel = 2;
+		break;
+	case 1:
+	default:
+		for (int i = 0; i < 25; i++)
+		{
+			entity.at(i)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
 			TextImageInfo *temp = new TextImageInfo;
 			temp->mesh = new MeshData;
 			meshHandler.createRect(245, 145, temp);
@@ -359,7 +595,27 @@ bool JPCPractice::loadLevel(int level)
 			temp->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
 			temp->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
 
-			temp->text = L"Category";
+			switch (i)
+			{
+			case 25:
+				temp->text = L"かんじ";
+				break;
+			case 26:
+				temp->text = L"ことわざ";
+				break;
+			case 27:
+				temp->text = L"Onomatopoeia";
+				break;
+			case 28:
+				temp->text = L"Animal Sounds";
+				break;
+			case 29:
+				temp->text = L"Culture";
+				break;
+			default:
+				temp->text = L"Category";
+				break;
+			}		
 
 			textImages.push_back(temp);
 			graphics->InitD2DRectTexture(textImages.at(i), 144);
@@ -370,6 +626,37 @@ bool JPCPractice::loadLevel(int level)
 			textImages.at(i)->x = xc;
 			xc += 250;
 		}
+
+		//load question screens and answers
+		for (int i = 0; i < 25; i++)
+		{
+			TextImageInfo *temp1 = new TextImageInfo;
+			temp1->mesh = new MeshData;
+			meshHandler.createRect(245, 145, temp1);
+			temp1->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+			temp1->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
+
+			TextImageInfo *temp2 = new TextImageInfo;
+			temp2->mesh = new MeshData;
+			meshHandler.createRect(245, 145, temp2);
+			temp2->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+			temp2->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
+
+			temp1->text = L"The question goes here....";
+			temp2->text = L"....and the answer (with other info) goes here";
+
+			questionTextImages.push_back(temp1);
+			graphics->InitD2DRectTexture(questionTextImages.at(i), 64);
+			questionTextImages.at(i)->z = 169;
+			questionTextImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
+
+			answerTextImages.push_back(temp2);
+			graphics->InitD2DRectTexture(answerTextImages.at(i), 64);
+			answerTextImages.at(i)->z = 169;
+			answerTextImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
+		}
+
+		currentLevel = 1;
 		break;
 	}
 

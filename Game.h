@@ -25,6 +25,7 @@
 #include "Image.h"
 #include "Object.h"
 #include "Collisions.h"
+#include "Vector3.h"
 //#include "console.h"
 
 extern GridContents collisionGrid[GRID_HASH_SIZE];
@@ -44,6 +45,7 @@ protected:
 	std::vector<Object*> geometry; //collidable geometry/platforms
 	std::vector<Image*> image; //non-colliable imagess
 	std::vector<TextImageInfo*> textImages; //text overlay textures
+	
 
 	//GridContents collisionGrid[GRID_HASH_SIZE];
 	//CollGrid collisionGrid;
