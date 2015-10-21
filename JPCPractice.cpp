@@ -557,12 +557,18 @@ bool JPCPractice::loadLevel(int level)
 			temp2->text = L"....and the answer (with other info) goes here";
 
 			questionTextImages.push_back(temp1);
-			graphics->InitD2DRectTexture(questionTextImages.at(i), 64);
+			if (questionTextImages.at(i)->text.length() > 256)
+				graphics->InitD2DRectTexture(questionTextImages.at(i), 48);
+			else
+				graphics->InitD2DRectTexture(questionTextImages.at(i), 64);
 			questionTextImages.at(i)->z = 169;
 			questionTextImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
 
 			answerTextImages.push_back(temp2);
-			graphics->InitD2DRectTexture(answerTextImages.at(i), 64);
+			if (answerTextImages.at(i)->text.length() > 256)
+				graphics->InitD2DRectTexture(answerTextImages.at(i), 48);
+			else
+				graphics->InitD2DRectTexture(answerTextImages.at(i), 64);
 			answerTextImages.at(i)->z = 169;
 			answerTextImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
 		}
@@ -662,12 +668,18 @@ bool JPCPractice::loadLevel(int level)
 			temp2->text = round1Questions[i].answerText;
 
 			questionTextImages.push_back(temp1);
-			graphics->InitD2DRectTexture(questionTextImages.at(i), 64);
+			if (questionTextImages.at(i)->text.length() > 256)
+				graphics->InitD2DRectTexture(questionTextImages.at(i), 48);
+			else
+				graphics->InitD2DRectTexture(questionTextImages.at(i), 64);
 			questionTextImages.at(i)->z = 169;
 			questionTextImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
 
 			answerTextImages.push_back(temp2);
-			graphics->InitD2DRectTexture(answerTextImages.at(i), 64);
+			if (answerTextImages.at(i)->text.length() > 256)
+				graphics->InitD2DRectTexture(answerTextImages.at(i), 48);
+			else
+				graphics->InitD2DRectTexture(answerTextImages.at(i), 64);
 			answerTextImages.at(i)->z = 169;
 			answerTextImages.at(i)->rotation.makeRotate(-90, 1, 0, 0);
 		}
@@ -842,7 +854,7 @@ void JPCPractice::loadQuestionFiles()
 				{
 					if (uv == L"<\\n>")
 					{
-						temp->questionText.append(L"\n");
+						temp->answerText.append(L"\n");
 					}
 					else
 					{
@@ -915,527 +927,125 @@ void JPCPractice::loadQuestionFiles()
 
 void JPCPractice::assignQuestions(int round)
 {
-	std::vector<int> diff1, diff2, diff3, diff4, diff5;
-	int chosen;
-	srand(time(NULL));
 	switch (round)
 	{
 	case 2:
-		for (int i = 0; i < placeNames.size(); i++)
-		{
-			
-		}
-		for (int i = 0; i < yojukugo.size(); i++)
-		{
-
-		}
-		for (int i = 0; i < idioms.size(); i++)
-		{
-
-		}
-		for (int i = 0; i < katakana.size(); i++)
-		{
-
-		}
-		for (int i = 0; i < grammar.size(); i++)
-		{
-
-		}
+		randomizeCategory(&placeNames, 0, round);
+		randomizeCategory(&yojukugo, 5, round);
+		randomizeCategory(&idioms, 10, round);
+		randomizeCategory(&katakana, 15, round);
+		randomizeCategory(&grammar, 20, round);
 		break;
 	case 1:
 	default:
-		//sift through the kanji questions
-		for (int i = 0; i < kanji.size(); i++)
+		//randomize the questions within their categories, provided no difficulties assigned
+		randomizeCategory(&kanji, 0, 1);
+		randomizeCategory(&kotowaza, 5, 1);
+		randomizeCategory(&kasanekotoba, 10, 1);
+		randomizeCategory(&animalSounds, 15, 1);
+		randomizeCategory(&culture, 20, 1);
+	}
+}
+
+void JPCPractice::randomizeCategory(std::vector<Question*> *category, int offset, int round)
+{
+	std::vector<int> diff1, diff2, diff3, diff4, diff5;
+	int chosen;
+	srand(time(NULL));
+
+	for (int i = 0; i < category->size(); i++)
+	{
+		if (category->at(i)->difficulty[0] == -1)
 		{
-			if (kanji.at(i)->difficulty[0] == -1)
+			bool good;
+			do
 			{
-				bool good;
-				do
-				{
-					good = true;
-					chosen = rand() % 5 + 1;
-					switch (chosen)
-					{
-					case 1:
-						if (diff1.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 2;
-							good = false;
-						}
-						else
-						{
-							diff1.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 2:
-						if (diff2.size() != 0 && (diff1.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 3;
-							good = false;
-						}
-						else
-						{
-							diff2.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 3:
-						if (diff3.size() != 0 && (diff2.size() == 0 || diff1.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 4;
-							good = false;
-						}
-						else
-						{
-							diff3.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 4:
-						if (diff4.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff1.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 5;
-							good = false;
-						}
-						else
-						{
-							diff4.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 5:
-						if (diff5.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff1.size() == 0))
-							good = false;
-						else
-						{
-							diff5.emplace_back(i);
-							good = true;
-							break;
-						}
-					default:
-						break;
-					}
-				} while (!good);
-				
-				/*switch (chosen)
+				good = true;
+				chosen = rand() % 5 + 1;
+				switch (chosen)
 				{
 				case 1:
-					diff1.emplace_back(i);
-					break;
+					if (diff1.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
+					{
+						chosen = 2;
+						good = false;
+					}
+					else
+					{
+						diff1.emplace_back(i);
+						good = true;
+						break;
+					}
 				case 2:
-					diff2.emplace_back(i);
-					break;
+					if (diff2.size() != 0 && (diff1.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
+					{
+						chosen = 3;
+						good = false;
+					}
+					else
+					{
+						diff2.emplace_back(i);
+						good = true;
+						break;
+					}
 				case 3:
-					diff3.emplace_back(i);
-					break;
+					if (diff3.size() != 0 && (diff2.size() == 0 || diff1.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
+					{
+						chosen = 4;
+						good = false;
+					}
+					else
+					{
+						diff3.emplace_back(i);
+						good = true;
+						break;
+					}
 				case 4:
-					diff4.emplace_back(i);
-					break;
+					if (diff4.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff1.size() == 0 || diff5.size() == 0))
+					{
+						chosen = 5;
+						good = false;
+					}
+					else
+					{
+						diff4.emplace_back(i);
+						good = true;
+						break;
+					}
 				case 5:
-					diff5.emplace_back(i);
-					break;
+					if (diff5.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff1.size() == 0))
+						good = false;
+					else
+					{
+						diff5.emplace_back(i);
+						good = true;
+						break;
+					}
 				default:
 					break;
-				}*/
-			}
+				}
+			} while (!good);
 		}
-
-		//randomly choose one for each difficulty and assign it
-		chosen = rand() % diff1.size();
-		round1Questions[0] = *kanji.at(diff1.at(chosen));
-		chosen = rand() % diff2.size();
-		round1Questions[1] = *kanji.at(diff2.at(chosen));
-		chosen = rand() % diff3.size();
-		round1Questions[2] = *kanji.at(diff3.at(chosen));
-		chosen = rand() % diff4.size();
-		round1Questions[3] = *kanji.at(diff4.at(chosen));
-		chosen = rand() % diff5.size();
-		round1Questions[4] = *kanji.at(diff5.at(chosen));
-
-		//clear the diff vectors
-		diff1.clear();
-		diff2.clear();
-		diff3.clear();
-		diff4.clear();
-		diff5.clear();
-
-		for (int i = 0; i < kotowaza.size(); i++)
-		{
-			if (kotowaza.at(i)->difficulty[0] == -1)
-			{
-				bool good;
-				do
-				{
-					good = true;
-					chosen = rand() % 5 + 1;
-					switch (chosen)
-					{
-					case 1:
-						if (diff1.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 2;
-							good = false;
-						}
-						else
-						{
-							diff1.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 2:
-						if (diff2.size() != 0 && (diff1.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 3;
-							good = false;
-						}
-						else
-						{
-							diff2.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 3:
-						if (diff3.size() != 0 && (diff2.size() == 0 || diff1.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 4;
-							good = false;
-						}
-						else
-						{
-							diff3.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 4:
-						if (diff4.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff1.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 5;
-							good = false;
-						}
-						else
-						{
-							diff4.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 5:
-						if (diff5.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff1.size() == 0))
-							good = false;
-						else
-						{
-							diff5.emplace_back(i);
-							good = true;
-							break;
-						}
-					default:
-						break;
-					}
-				} while (!good);
-			}
-		}
-
-		//randomly choose one for each difficulty and assign it
-		chosen = rand() % diff1.size();
-		round1Questions[5] = *kotowaza.at(diff1.at(chosen));
-		chosen = rand() % diff2.size();
-		round1Questions[6] = *kotowaza.at(diff2.at(chosen));
-		chosen = rand() % diff3.size();
-		round1Questions[7] = *kotowaza.at(diff3.at(chosen));
-		chosen = rand() % diff4.size();
-		round1Questions[8] = *kotowaza.at(diff4.at(chosen));
-		chosen = rand() % diff5.size();
-		round1Questions[9] = *kotowaza.at(diff5.at(chosen));
-
-		//clear the diff vectors
-		diff1.clear();
-		diff2.clear();
-		diff3.clear();
-		diff4.clear();
-		diff5.clear();
-
-		for (int i = 0; i < kasanekotoba.size(); i++)
-		{
-			if (kasanekotoba.at(i)->difficulty[0] == -1)
-			{
-				bool good;
-				do
-				{
-					good = true;
-					chosen = rand() % 5 + 1;
-					switch (chosen)
-					{
-					case 1:
-						if (diff1.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 2;
-							good = false;
-						}
-						else
-						{
-							diff1.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 2:
-						if (diff2.size() != 0 && (diff1.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 3;
-							good = false;
-						}
-						else
-						{
-							diff2.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 3:
-						if (diff3.size() != 0 && (diff2.size() == 0 || diff1.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 4;
-							good = false;
-						}
-						else
-						{
-							diff3.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 4:
-						if (diff4.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff1.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 5;
-							good = false;
-						}
-						else
-						{
-							diff4.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 5:
-						if (diff5.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff1.size() == 0))
-							good = false;
-						else
-						{
-							diff5.emplace_back(i);
-							good = true;
-							break;
-						}
-					default:
-						break;
-					}
-				} while (!good);
-			}
-		}
-
-		//randomly choose one for each difficulty and assign it
-		chosen = rand() % diff1.size();
-		round1Questions[10] = *kasanekotoba.at(diff1.at(chosen));
-		chosen = rand() % diff2.size();
-		round1Questions[11] = *kasanekotoba.at(diff2.at(chosen));
-		chosen = rand() % diff3.size();
-		round1Questions[12] = *kasanekotoba.at(diff3.at(chosen));
-		chosen = rand() % diff4.size();
-		round1Questions[13] = *kasanekotoba.at(diff4.at(chosen));
-		chosen = rand() % diff5.size();
-		round1Questions[14] = *kasanekotoba.at(diff5.at(chosen));
-
-		//clear the diff vectors
-		diff1.clear();
-		diff2.clear();
-		diff3.clear();
-		diff4.clear();
-		diff5.clear();
-
-		for (int i = 0; i < animalSounds.size(); i++)
-		{
-			if (animalSounds.at(i)->difficulty[0] == -1)
-			{
-				bool good;
-				do
-				{
-					good = true;
-					chosen = rand() % 5 + 1;
-					switch (chosen)
-					{
-					case 1:
-						if (diff1.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 2;
-							good = false;
-						}
-						else
-						{
-							diff1.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 2:
-						if (diff2.size() != 0 && (diff1.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 3;
-							good = false;
-						}
-						else
-						{
-							diff2.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 3:
-						if (diff3.size() != 0 && (diff2.size() == 0 || diff1.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 4;
-							good = false;
-						}
-						else
-						{
-							diff3.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 4:
-						if (diff4.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff1.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 5;
-							good = false;
-						}
-						else
-						{
-							diff4.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 5:
-						if (diff5.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff1.size() == 0))
-							good = false;
-						else
-						{
-							diff5.emplace_back(i);
-							good = true;
-							break;
-						}
-					default:
-						break;
-					}
-				} while (!good);
-			}
-		}
-
-		//randomly choose one for each difficulty and assign it
-		chosen = rand() % diff1.size();
-		round1Questions[15] = *animalSounds.at(diff1.at(chosen));
-		chosen = rand() % diff2.size();
-		round1Questions[16] = *animalSounds.at(diff2.at(chosen));
-		chosen = rand() % diff3.size();
-		round1Questions[17] = *animalSounds.at(diff3.at(chosen));
-		chosen = rand() % diff4.size();
-		round1Questions[18] = *animalSounds.at(diff4.at(chosen));
-		chosen = rand() % diff5.size();
-		round1Questions[19] = *animalSounds.at(diff5.at(chosen));
-
-		//clear the diff vectors
-		diff1.clear();
-		diff2.clear();
-		diff3.clear();
-		diff4.clear();
-		diff5.clear();
-
-		for (int i = 0; i < culture.size(); i++)
-		{
-			if (culture.at(i)->difficulty[0] == -1)
-			{
-				bool good;
-				do
-				{
-					good = true;
-					chosen = rand() % 5 + 1;
-					switch (chosen)
-					{
-					case 1:
-						if (diff1.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 2;
-							good = false;
-						}
-						else
-						{
-							diff1.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 2:
-						if (diff2.size() != 0 && (diff1.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 3;
-							good = false;
-						}
-						else
-						{
-							diff2.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 3:
-						if (diff3.size() != 0 && (diff2.size() == 0 || diff1.size() == 0 || diff4.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 4;
-							good = false;
-						}
-						else
-						{
-							diff3.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 4:
-						if (diff4.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff1.size() == 0 || diff5.size() == 0))
-						{
-							chosen = 5;
-							good = false;
-						}
-						else
-						{
-							diff4.emplace_back(i);
-							good = true;
-							break;
-						}
-					case 5:
-						if (diff5.size() != 0 && (diff2.size() == 0 || diff3.size() == 0 || diff4.size() == 0 || diff1.size() == 0))
-							good = false;
-						else
-						{
-							diff5.emplace_back(i);
-							good = true;
-							break;
-						}
-					default:
-						break;
-					}
-				} while (!good);
-			}
-		}
-
-		//randomly choose one for each difficulty and assign it
-		chosen = rand() % diff1.size();
-		round1Questions[20] = *culture.at(diff1.at(chosen));
-		chosen = rand() % diff2.size();
-		round1Questions[21] = *culture.at(diff2.at(chosen));
-		chosen = rand() % diff3.size();
-		round1Questions[22] = *culture.at(diff3.at(chosen));
-		chosen = rand() % diff4.size();
-		round1Questions[23] = *culture.at(diff4.at(chosen));
-		chosen = rand() % diff5.size();
-		round1Questions[24] = *culture.at(diff5.at(chosen));
-
-		//clear the diff vectors
-		diff1.clear();
-		diff2.clear();
-		diff3.clear();
-		diff4.clear();
-		diff5.clear();
 	}
+
+	//randomly choose one for each difficulty and assign it
+	chosen = rand() % diff1.size();
+	round1Questions[offset] = *category->at(diff1.at(chosen));
+	chosen = rand() % diff2.size();
+	round1Questions[offset + 1] = *category->at(diff2.at(chosen));
+	chosen = rand() % diff3.size();
+	round1Questions[offset + 2] = *category->at(diff3.at(chosen));
+	chosen = rand() % diff4.size();
+	round1Questions[offset + 3] = *category->at(diff4.at(chosen));
+	chosen = rand() % diff5.size();
+	round1Questions[offset + 4] = *category->at(diff5.at(chosen));
+
+	//clear the diff vectors
+	diff1.clear();
+	diff2.clear();
+	diff3.clear();
+	diff4.clear();
+	diff5.clear();
 }
 
 std::wstring JPCPractice::fromUTF8(const char* str)

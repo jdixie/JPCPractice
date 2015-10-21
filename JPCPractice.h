@@ -66,6 +66,7 @@ private:
 	Question round1Questions[25];
 	Question round2Questions[25];
 
+	void randomizeCategory(std::vector<Question*> *category, int offset, int round);
 	std::wstring fromUTF8(const char* str);
 
 public:
