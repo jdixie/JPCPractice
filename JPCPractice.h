@@ -3,6 +3,21 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include "Game.h"
+#include <locale>
+
+struct Question
+{
+	int difficulty[6];
+	std::wstring questionText;
+	std::wstring answerText;
+
+	Question()
+	{
+		difficulty[0] = -1;
+		questionText = L"The question goes here....";
+		answerText = L"....and the answer (with other info) goes here";
+	}
+};
 
 class JPCPractice : public Game
 {
@@ -33,6 +48,26 @@ private:
 	int passes;
 	float animationDivisions = 30;
 
+	//round one lists
+	std::vector<Question*> kanji;
+	std::vector<Question*> kotowaza;
+	std::vector<Question*> kasanekotoba;
+	std::vector<Question*> animalSounds;
+	std::vector<Question*> culture;
+
+	//round two lists
+	std::vector<Question*> placeNames;
+	std::vector<Question*> yojukugo;
+	std::vector<Question*> idioms;
+	std::vector<Question*> katakana;
+	std::vector<Question*> grammar;
+
+	//arrays for game questions, rounds 1 and 2
+	Question round1Questions[25];
+	Question round2Questions[25];
+
+	std::wstring fromUTF8(const char* str);
+
 public:
 	JPCPractice();
 	~JPCPractice();
@@ -48,6 +83,9 @@ public:
 	void loadConfig();
 	void saveConfig();
 	bool loadLevel(int level);
+
+	void loadQuestionFiles();
+	void assignQuestions(int round);
 };
 
 #endif
