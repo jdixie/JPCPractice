@@ -19,6 +19,11 @@ struct Question
 	}
 };
 
+enum GameState
+{
+	LOADING, CHOOSING, ANIMATING, QUESTIONWAITING, QUESTIONMODE, ANSWERMODE
+};
+
 class JPCPractice : public Game
 {
 private:
@@ -33,10 +38,7 @@ private:
 	}
 	std::vector<TextImageInfo*> questionTextImages; //question text screens for the actual question
 	std::vector<TextImageInfo*> answerTextImages; //answer text screens for each question
-	bool questionMode = false;
-	bool answerMode = false;
-	bool animating = false;
-	bool questionWaiting = false;
+	GameState gameState;
 	int questionCountdown = 30;
 	int questionIndex = -1;
 	float questionScreenOriginalX;
@@ -47,6 +49,9 @@ private:
 	float zIncr;
 	int passes;
 	float animationDivisions = 30;
+
+	Image pointer;
+	float pointerSize = .05;
 
 	//round one lists
 	std::vector<Question*> kanji;

@@ -87,6 +87,7 @@ bool CreateMainWindow(HWND &hwnd, HINSTANCE hInstance, int nCmdShow)
 	wcx.hInstance = hInstance;				//Handle to instance
 	wcx.hIcon = NULL;
 	wcx.hCursor = LoadCursor(NULL,IDC_ARROW); //predefined arrow
+	//wcx.hCursor = LoadCursorFromFile(L"S1.ani");
 	//background brush
 	wcx.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	wcx.lpszMenuName = NULL;				//name of menu resource

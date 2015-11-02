@@ -77,21 +77,26 @@ void JPCPractice::initialize(HWND hw)
 	}
 
 	player.initialize(input, graphics, 0, 0, 1);
-	//geometry.at(0)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(.4, .4, .4, 1);
-	//geometry.at(0)->rotate(90, 1, 0, 0);
-
-	/*Object *sphere = new Object;
-	sphere->initialize(graphics, 0, 0, 1);
-	sphere->getImageInfo()->mesh = new MeshData;
-	meshHandler.createSphere(150, 16, sphere->getImageInfo());
-	sphere->getImageInfo()->mesh->textureMapSRV.push_back(graphics->createTextureSRV(L"mesh\\walls.png"));
-	sphere->setY(100);
-	sphere->setVertices();
-	entity.push_back(sphere);*/
 
 	//set up play screens: vertically 0-4 are column 1 100-500, 5-9 are column 2 100-500, etc.
 	//25-29 are the category screens across the top
 	//center of each play screen, since looking down x axis, all x will be the same
+
+	//mouse pointer
+	pointer.initialize(graphics, 0, 0, 1);
+	pointer.getImageInfo()->mesh = new MeshData;
+	meshHandler.createRect(pointerSize, pointerSize, pointer.getImageInfo());
+	pointer.getImageInfo()->mesh->textureMapSRV.push_back(textureManager.loadTexture(L"mesh\\arrow.png"));
+	for (int i = 0; i < 4; i++)
+	{
+		pointer.getImageInfo()->mesh->vertices.at(i).position.y = pointer.getImageInfo()->mesh->vertices.at(i).position.z;
+		pointer.getImageInfo()->mesh->vertices.at(i).position.z = 0;
+	}
+	pointer.setVertices();
+	pointer.getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
+	pointer.getImageInfo()->mesh->materials.at(0).Mat.Emissive = DirectX::XMFLOAT4(1, 1, 1, 1);
+	pointer.rotate(90, 0, 0, 1);
+	pointer.setZ(1);
 
 	//load and ready bluescreens
 	float yc = 225;
@@ -141,7 +146,8 @@ void JPCPractice::initialize(HWND hw)
 
 	graphics->camera.setCamType(CamType::FPS);
 	graphics->camera.initialize();
-	graphics->camera.setPosition(0, 0, 0, 0, 90);
+	//graphics->camera.setPosition(0, 0, 0, 0, 90);
+	graphics->camera.setPosition(0, 0, 0, 0, 0, 1, 0, 1, 0);
 	rxz = 90;
 
 	initializeChosenQuestions();
@@ -149,7 +155,23 @@ void JPCPractice::initialize(HWND hw)
 
 void JPCPractice::update()
 {
-	if (animating)
+	Vector3 rayPos, rayDir;
+	int mouseX, mouseY;
+	if (bFullScreen)
+	{
+		mouseX = input->getMouseX() * fGameScale;
+		mouseY = input->getMouseY() * fGameScale;
+	}
+	else
+	{
+		mouseX = input->getMouseX();
+		mouseY = input->getMouseY();
+	}
+	graphics->getPickRay(mouseX, mouseY, &rayPos, &rayDir);
+	pointer.setX(rayDir.x + pointerSize / 2);
+	pointer.setY(-rayDir.y - pointerSize / 2);
+
+	if (gameState == GameState::ANIMATING)
 	{
 		if (passes <= animationDivisions)
 		{
@@ -173,37 +195,37 @@ void JPCPractice::update()
 		}
 		else
 		{
-			animating = false;
-			questionWaiting = true;
+			gameState = GameState::QUESTIONWAITING;
 		}
 	}
-	else if (questionWaiting)
+	else if (gameState == GameState::QUESTIONWAITING)
 	{
 		questionCountdown--;
 		if (questionCountdown < 0)
 		{
-			questionWaiting = false;
-			questionMode = true;
+			gameState = GameState::QUESTIONMODE;
 			questionCountdown = 20;
 			chosenQuestion[questionIndex] = true;
 			numberChosen++;
 		}
 	}
-	else if (questionMode)
+	else if (gameState == GameState::QUESTIONMODE)
 	{
 		if (input->getMouseLButton())
 		{
 			input->setMouseLButton(false);
-			questionMode = false;
-			answerMode = true;
+			gameState = GameState::ANSWERMODE;
 		}
 	}
-	else if (answerMode)
+	else if (gameState == GameState::ANSWERMODE)
 	{
+		if (input->getMouseRButton())
+		{
+			gameState = GameState::QUESTIONMODE;
+		}
 		if (input->getMouseLButton())
 		{
 			input->setMouseLButton(false);
-			answerMode = false;
 			entity.at(questionIndex)->setX(questionScreenOriginalX);
 			entity.at(questionIndex)->setY(questionScreenOriginalY);
 			entity.at(questionIndex)->setZ(questionScreenOriginalZ);
@@ -212,6 +234,7 @@ void JPCPractice::update()
 			textImages.at(questionIndex)->z = questionScreenOriginalZ - 1;
 			entity.at(questionIndex)->getImageInfo()->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 0, 0, 1);
 			questionIndex = -1;
+			gameState = GameState::CHOOSING;
 		}
 	}
 	else
@@ -226,8 +249,9 @@ void JPCPractice::update()
 		{
 			input->setMouseLButton(false);
 			//compute ray for clicked spot  in view space
-			Vector3 rayPos, rayDir, dirFrac;
-			int mouseX, mouseY;
+			Vector3 dirFrac;
+			//Vector3 rayPos, rayDir, dirFrac;
+			/*int mouseX, mouseY;
 			if (bFullScreen)
 			{
 				mouseX = input->getMouseX() * fGameScale;
@@ -238,7 +262,7 @@ void JPCPractice::update()
 				mouseX = input->getMouseX();
 				mouseY = input->getMouseY();
 			}
-			graphics->getPickRay(mouseX, mouseY, &rayPos, &rayDir);
+			graphics->getPickRay(mouseX, mouseY, &rayPos, &rayDir);*/
 
 			for (int i = 0; i < 25; i++)
 			{
@@ -273,8 +297,8 @@ void JPCPractice::update()
 					//chosenQuestion[i] = true;
 					//numberChosen++;
 
-					if (chosenQuestion[i] == false)
-					{
+					//if (chosenQuestion[i] == false)
+					//{
 						questionIndex = i;
 						questionScreenOriginalX = entity.at(i)->getX();
 						questionScreenOriginalY = entity.at(i)->getY();
@@ -284,9 +308,9 @@ void JPCPractice::update()
 						zIncr = (-880 / animationDivisions);
 						passes = 0;
 
-						animating = true;
+						gameState = GameState::ANIMATING;
 						break;
-					}
+					//}
 				}
 			}
 		}
@@ -344,7 +368,7 @@ void JPCPractice::render()
 	//std::wstringstream a;
 	//a << "rxz @ JPCPractice: " << rxz << "\n";
 	//OutputDebugString(a.str().c_str());
-	graphics->camera.setPosition(cameraX, cameraY, cameraZ, ry, rxz);
+	//graphics->camera.setPosition(cameraX, cameraY, cameraZ, ry, rxz);
 	graphics->setViewMatrix();
 	
 	//player.draw();
@@ -363,9 +387,15 @@ void JPCPractice::render()
 		if ((i < 25 && chosenQuestion[i] == false) || (i >= 25))
 			graphics->drawTextRect(textImages.at(i));
 	}
-	if (questionMode)
+	if (gameState != GameState::QUESTIONMODE && gameState != GameState::ANSWERMODE)
+	{
+		graphics->setBlendStateTransparent(pointer.getBlendFactors());
+		pointer.draw();
+		graphics->setBlendStateNotTransparent();
+	}
+	if (gameState == GameState::QUESTIONMODE)
 		graphics->drawTextRect(questionTextImages.at(questionIndex));
-	if (answerMode)
+	if (gameState == GameState::ANSWERMODE)
 		graphics->drawTextRect(answerTextImages.at(questionIndex));
 }
 
@@ -431,27 +461,6 @@ bool JPCPractice::loadLevel(int level)
 	std::string v;
 	std::ifstream levelFile;
 	int tempLevel;
-
-	/*TextImageInfo *temp = new TextImageInfo;
-	temp->mesh = new MeshData;
-	meshHandler.createRect(245, 145, temp);
-	temp->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
-	temp->text = L"Test";
-	textImages.push_back(temp);
-	graphics->InitD2DRectTexture(textImages.at(0));
-	textImages.at(0)->z = 1049;
-	textImages.at(0)->rotation.makeRotate(-90, 1, 0, 0);
-
-	TextImageInfo *temp2 = new TextImageInfo;
-	temp2->mesh = new MeshData;
-	meshHandler.createRect(245, 145, temp2);
-	temp2->mesh->materials.at(0).Mat.Ambient = DirectX::XMFLOAT4(1, 1, 1, 1);
-	temp2->text = L"Other";
-	textImages.push_back(temp2);
-	graphics->InitD2DRectTexture(textImages.at(1));
-	textImages.at(1)->z = 1049;
-	textImages.at(1)->y = 400;
-	textImages.at(1)->rotation.makeRotate(-90, 1, 0, 0);*/
 
 	//play screen reminder: vertically 0-4 are column 1 100-500, 5-9 are column 2 100-500, etc.
 	//25-29 are the category screens across the top
