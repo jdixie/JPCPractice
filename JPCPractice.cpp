@@ -25,7 +25,7 @@ void JPCPractice::initialize(HWND hw)
 
 	Game::initialize(hw, nGameWidth, nGameHeight, bFullScreen);
 
-	ShowCursor(true);
+	ShowCursor(false);
 
 	if (bFullScreen)
 	{
