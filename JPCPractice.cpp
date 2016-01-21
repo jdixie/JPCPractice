@@ -86,7 +86,7 @@ void JPCPractice::initialize(HWND hw)
 	pointer.initialize(graphics, 0, 0, 1);
 	pointer.getImageInfo()->mesh = new MeshData;
 	meshHandler.createRect(pointerSize, pointerSize, pointer.getImageInfo());
-	pointer.getImageInfo()->mesh->textureMapSRV.push_back(textureManager.loadTexture(L"mesh\\arrow.png"));
+	pointer.getImageInfo()->mesh->textureMapSRV.push_back(textureManager.loadTexture(L"mesh\\arrowt.png"));
 	for (int i = 0; i < 4; i++)
 	{
 		pointer.getImageInfo()->mesh->vertices.at(i).position.y = pointer.getImageInfo()->mesh->vertices.at(i).position.z;

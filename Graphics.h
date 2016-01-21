@@ -603,7 +603,14 @@ public:
 
 	//blending
 	virtual void setBlendStateNotTransparent() { dxDeviceContext->OMSetBlendState(NULL, NULL, 0xffffffff); }
-	virtual void setBlendStateTransparent(float blendFactors[]) { dxDeviceContext->OMSetBlendState(transparentBS, blendFactors, 0xffffffff); }
+	virtual void setBlendStateTransparent(float blendFactors[]) 
+	{ 
+		dxDeviceContext->OMSetBlendState(transparentBS, blendFactors, 0xffffffff); 
+		/*float transparentFactor[] = {
+			1, 1, 1, 1
+		};
+		setBlendStateTransparent(transparentFactor);*/
+	}
 
 	void renderText(std::wstring text);// , ImageInfo *image);
 	void drawTextRect(TextImageInfo *textImageInfo);
